@@ -112,7 +112,6 @@ ITEMS = {
     "supreme": [],
 }
 
-# Dynamically populate the "common" list with items from the assets/items/common folder
 ITEMS["common"] = [
     item for item in os.listdir("assets/items/common")
     if item.endswith(".png") and not item.startswith("z")
