@@ -1,6 +1,7 @@
 import pygame as pg
 import constants as C
 import random, math, colorsys, os, json, time
+from dataclasses import dataclass
 
 # Text
 def blit_text(img, x, y, centered, split=False, noblit = False):
@@ -138,6 +139,12 @@ BACKGROUNDS = {
     "cloud_2": [pg.transform.smoothscale_by(pg.image.load(BACKGROUNDS_PATH + "cloud_2.png").convert_alpha(), C.SCALE_X), (250,250)],
     "cloud_3": [pg.transform.smoothscale_by(pg.image.load(BACKGROUNDS_PATH + "cloud_3.png").convert_alpha(), C.SCALE_X), (250,250)],
 }
+
+@dataclass
+class RainbowConfig:
+    enabled: bool = False
+    hue_step: int = 10
+    fixed_lightness: int = 80
 
 class Factory():
     def __init__(self):
@@ -465,7 +472,7 @@ class Button():
         return current_time - click_type_time >= self.cooldown
 
 class Text():
-    def __init__(self, text: str = 'Empty Text Layer', font: pg.font = FONTS["M"] , color: tuple = (0,0,0), pos: tuple = (0,0), opacity: int = 255, is_centered: bool = False, is_bold: bool = False, is_italic: bool = False, is_underline: bool = False, has_rainbow: bool = False, has_number_formatting: bool = False):
+    def __init__(self, text: str = 'Empty Text Layer', font: pg.font = FONTS["M"] , color: tuple = (0,0,0), pos: tuple = (0,0), opacity: int = 255, is_centered: bool = False, is_bold: bool = False, is_italic: bool = False, is_underline: bool = False, rainbow: RainbowConfig = RainbowConfig(), has_number_formatting: bool = False):
         self.text = text
         self.font = font
         self.color = color
@@ -476,7 +483,7 @@ class Text():
         self.bold = is_bold
         self.italic = is_italic
         self.underline = is_underline
-        self.rainbow = has_rainbow
+        self.rainbow = rainbow
         self.rendered_images = []
         
         pg.font.Font.set_bold(self.font, False)
@@ -488,18 +495,24 @@ class Text():
         if has_number_formatting: self.text = self.format_long_number()
 
         if not "\n" in self.text:
-            image = self.font.render(self.text, True, self.color)
-            image.set_alpha(self.opacity)
-            self.rendered_images.append(image)
+            self.rendered_images.append(self.render_text(self.text))
         else:
             for word in self.text.split('\n'):
-                image = self.font.render(word, True, self.color)
-                image.set_alpha(self.opacity)
-                self.rendered_images.append(image)
+                self.rendered_images.append(self.render_text(word))
         
     def draw(self, screen: pg.display):
+        y = self.y
         for img in self.rendered_images:
-            screen.blit(img, (img.get_rect(center=(self.x, self.x)) if self.centered else (self.x, self.y)))
+            if not self.rainbow.enabled:
+                screen.blit(img, (img.get_rect(center=(self.x, y)) if self.centered else (self.x, y)))
+                y += C.SCALE_Y * (img.get_height() + 5)
+
+            else:
+                x = self.x
+                for char in img:
+                    screen.blit(char, (char.get_rect(center=(x, y)) if self.centered else (x, y)))
+                    x += C.SCALE_X * (char.get_width() + 5)
+                y += C.SCALE_Y * (img[0].get_height() + 5)
 
     def format_long_number(self):
         assert self.is_number()
@@ -517,6 +530,28 @@ class Text():
             return True
         except ValueError:
             return False
+    
+    def render_text(self, text) -> pg.image:
+        if self.rainbow.enabled:
+            image_array = []
+            rainbow_iter = self.rainbow_generator()
+            for char in self.text:
+                new_color = next(rainbow_iter)
+                image = self.font.render(char, True, new_color)
+                image.set_alpha(self.opacity)
+                image_array.append(image)
+            return image_array
+        else:
+            image = self.font.render(text, True, self.color)
+            image.set_alpha(self.opacity)
+            return image
+    
+    def rainbow_generator(self):
+        hue = 0
+        while True:
+            r, g, b = [int(c*255) for c in colorsys.hsv_to_rgb(hue / 360.0, 1, self.rainbow.fixed_lightness / 100.0)]
+            yield (r,g,b)
+            hue = (hue + self.rainbow.hue_step) % 360
 
 button_1 = Button(200, 200, pg.image.load(MENU_PATH + "Achievement.png").convert_alpha())
 
@@ -524,7 +559,7 @@ mouse = Mouse()
 factory = Factory()
 collision_box = pg.Rect(0, 850*C.SCALE_X, 1920*C.SCALE_X, 100*C.SCALE_Y)
 
-test_text = Text(text = "Hey world HAHAHAHAHHAHAHAHAHA", color = (255,128,255), pos=(500,500), font=FONTS['S'], has_rainbow=True)
+test_text = Text(text = "Hey world HAHAHAHAHHAHAHAHAHA", color = (255,128,255), pos=(500,500), font=FONTS['XL'], rainbow=RainbowConfig(enabled=True, hue_step = 10, fixed_lightness = 80))
 
 item_group = pg.sprite.Group()
 if os.path.getsize('script/factory_items.json') > 0:
