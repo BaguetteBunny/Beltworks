@@ -84,7 +84,6 @@ def format_long_number(number: int):
 
     return string_number if number_magnitude < 0 else string_number[:(3 if number_length%3==0 else number_length%3)] + (('.')+string_number[1] if number_length%4 == 0 else '') +f'{format_list[number_magnitude]}'
 
-
 pg.init()
 clock = pg.time.Clock()
 
@@ -117,9 +116,18 @@ ITEMS["common"] = [
     if item.endswith(".png") and not item.startswith("z")
 ]
 FONTS = {
-    "tiny": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 15),
-    "small": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 20),
-    "medium": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 30),
+    "3XS": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 2),
+    "2XS": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 5),
+    "XS": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 10),
+    "S": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 20),
+    "M": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 30),
+    "L": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 40),
+    "XL": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 50),
+    "2XL": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 60),
+    "3XL": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 70),
+    "4XL": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 80),
+    "5XL": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 90),
+    "6XL": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 100),
 }
 BACKGROUNDS = {
     "ocean_1": [pg.transform.smoothscale_by(pg.image.load(BACKGROUNDS_PATH + "ocean_1.png").convert_alpha(), C.SCALE_X), (250,250)],
@@ -455,12 +463,68 @@ class Button():
         if not click_type_time:
             return (current_time - self.last_left_click_time >= self.cooldown) and (current_time - self.last_right_click_time >= self.cooldown) 
         return current_time - click_type_time >= self.cooldown
-            
+
+class Text():
+    def __init__(self, text: str = 'Empty Text Layer', font: pg.font = FONTS["M"] , color: tuple = (0,0,0), pos: tuple = (0,0), opacity: int = 255, is_centered: bool = False, is_bold: bool = False, is_italic: bool = False, is_underline: bool = False, has_rainbow: bool = False, has_number_formatting: bool = False):
+        self.text = text
+        self.font = font
+        self.color = color
+        self.x = pos[0]*C.SCALE_X
+        self.y = pos[1]*C.SCALE_Y
+        self.opacity = opacity
+        self.centered = is_centered
+        self.bold = is_bold
+        self.italic = is_italic
+        self.underline = is_underline
+        self.rainbow = has_rainbow
+        self.rendered_images = []
+        
+        pg.font.Font.set_bold(self.font, False)
+        pg.font.Font.set_italic(self.font, False)
+        pg.font.Font.set_underline(self.font, False)
+        if self.bold: pg.font.Font.set_bold(font, True)
+        if self.italic: pg.font.Font.set_italic(font, True)
+        if self.underline: pg.font.Font.set_underline(font, True)
+        if has_number_formatting: self.text = self.format_long_number()
+
+        if not "\n" in self.text:
+            image = self.font.render(self.text, True, self.color)
+            image.set_alpha(self.opacity)
+            self.rendered_images.append(image)
+        else:
+            for word in self.text.split('\n'):
+                image = self.font.render(word, True, self.color)
+                image.set_alpha(self.opacity)
+                self.rendered_images.append(image)
+        
+    def draw(self, screen: pg.display):
+        for img in self.rendered_images:
+            screen.blit(img, (img.get_rect(center=(self.x, self.x)) if self.centered else (self.x, self.y)))
+
+    def format_long_number(self):
+        assert self.is_number()
+
+        string_number = str(int(self.text))
+        format_list = ['k', 'M', 'B', 'T']
+        
+        number_length = len(self.text)
+        number_magnitude = ((number_length-1)//3)-1
+        return string_number if number_magnitude < 0 else string_number[:(3 if number_length%3==0 else number_length%3)] + (('.')+string_number[1] if number_length%4 == 0 else '') +f'{format_list[number_magnitude]}'
+
+    def is_number(self):
+        try:
+            float(self.text)
+            return True
+        except ValueError:
+            return False
+
 button_1 = Button(200, 200, pg.image.load(MENU_PATH + "Achievement.png").convert_alpha())
 
 mouse = Mouse()
 factory = Factory()
 collision_box = pg.Rect(0, 850*C.SCALE_X, 1920*C.SCALE_X, 100*C.SCALE_Y)
+
+test_text = Text(text = "Hey world HAHAHAHAHHAHAHAHAHA", color = (255,128,255), pos=(500,500), font=FONTS['S'], has_rainbow=True)
 
 item_group = pg.sprite.Group()
 if os.path.getsize('script/factory_items.json') > 0:
@@ -488,6 +552,7 @@ while True:
     factory.draw(screen)
     button_1.draw(screen, mouse, hover = 0.8)
     button_1.clicked(mouse, 128)
+    test_text.draw(screen)
 
     # Event Handling -------------------------------------------------------------------------------------
     for event in pg.event.get():
