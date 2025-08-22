@@ -93,10 +93,10 @@ screen = pg.display.set_mode(largest_size, pg.FULLSCREEN | pg.HWACCEL | pg.HWSUR
 pg.display.set_caption("Testing")
 
 # Assets
-ASSETS_PATH = "assets/"
-MENU_PATH = ASSETS_PATH + "menu/"
-FONTS_PATH = ASSETS_PATH + "fonts/"
-BACKGROUNDS_PATH = ASSETS_PATH + "backgrounds/"
+ASSETS_PATH = "./assets/"
+MENU_PATH = ASSETS_PATH + "./menu/"
+FONTS_PATH = ASSETS_PATH + "./fonts/"
+BACKGROUNDS_PATH = ASSETS_PATH + "./backgrounds/"
 
 GUI = {
     'item_menu': pg.transform.smoothscale_by(pg.image.load(MENU_PATH + "Item_Menu.png").convert_alpha(), C.SCALE_X*1.5),
@@ -113,7 +113,7 @@ ITEMS = {
 }
 
 ITEMS["common"] = [
-    item for item in os.listdir("assets/items/common")
+    item for item in os.listdir(ASSETS_PATH + "items/common")
     if item.endswith(".png") and not item.startswith("z")
 ]
 FONTS = {
@@ -374,22 +374,22 @@ class Mouse(pg.sprite.Sprite):
             self.is_dragging = False
 
 class Button():
-    def __init__(self, x, y, image, cd=0.33, right_click=False, animated: tuple = (), opacity = None):
+    def __init__(self, x, y, image, click_side: tuple = (True, False), cd = 0.33, animated: tuple = (0, 0)):
         self.image = image
         self.pos = (x,y)
         self.animated = None
         self.rect = self.image.get_rect()
         self.rect.topleft = self.pos
 
-        self.opacity = opacity
+        self.original_opacity = self.opacity = 1
         self.hover = 1
-        self.cooldown = cd  # Cooldown in seconds
-        self.right_click_enabled = right_click
+        self.cooldown = cd
+        self.left_click_enabled = True if click_side[0] or (not click_side[0] and not click_side[1]) else False
+        self.right_click_enabled = click_side[1]
         self.last_left_click_time = 0
         self.last_right_click_time = 0
-        self.clicked = False
 
-        if animated:
+        if all(animated):
             self.animated = animated
             self.animated_frames = self.animated[0]
             self.animated_cd = self.animated[1]
@@ -404,8 +404,7 @@ class Button():
             self.frame = 0
             self.image = self.animation_list[self.frame]
 
-
-    def draw(self, screen, mouse, rescale = None, opacity = None, rotation = None, hover = None):
+    def draw(self, screen: pg.display, rescale = None, opacity = 255, rotation = None, hover = None):
         # Button Animation
         if self.animated:
             self.image = self.animation_list[self.frame]
@@ -414,40 +413,49 @@ class Button():
                 self.current_frame = pg.time.get_ticks()
 
         # Dynamic Button Rescaling
-        if rescale:
+        if isinstance(rescale, (int, float)):
             self.image = pg.transform.smoothscale_by(self.image, rescale)
             self.rect = self.image.get_rect()
             self.rect.center = self.pos
-        self.opacity = opacity if opacity else self.opacity
-
+        
         # Dynamic Button Opacity
-        if self.opacity:
-            self.image.set_alpha(self.opacity)
+        self.image.set_alpha(self.opacity)
+        if self.is_cooldownless():
+            self.opacity = opacity
 
         # Dynamic Button Rotation
         if rotation:
             self.image = pg.transform.rotate(self.image, rotation)
-
-        # Button Hover Animation
         
-
         # Button Draw
         screen.blit(self.image, self.rect)
 
-    def check_click(self, mouse):
+    def clicked(self, mouse: Mouse, click_opacity = 0):
         current_time = time.time()
-        self.clicked = False
         
-        if mouse.left_clicked and not mouse.right_clicked and self.rect.collidepoint(mouse.pos):
-            if current_time - self.last_left_click_time >= self.cooldown:
+        if self.left_click_enabled and mouse.left_clicked and self.rect.collidepoint(mouse.pos):
+            if self.is_cooldownless(current_time, self.last_left_click_time):
                 self.last_left_click_time = current_time
-                self.clicked = True
+                if isinstance(click_opacity, (int, float)):
+                    self.opacity = click_opacity
+            
+                return True
 
         if self.right_click_enabled and mouse.right_clicked and self.rect.collidepoint(mouse.pos):
-            if current_time - self.last_right_click_time >= self.cooldown:
+            if self.is_cooldownless(current_time, self.last_right_click_time):
                 self.last_right_click_time = current_time
-                self.clicked = True
+                if isinstance(click_opacity, (int, float)):
+                    self.opacity = click_opacity
 
+                return True
+            
+    def is_cooldownless(self, current_time = None, click_type_time = None) -> bool:
+        if not current_time:
+            current_time = time.time()
+        if not click_type_time:
+            return (current_time - self.last_left_click_time >= self.cooldown) and (current_time - self.last_right_click_time >= self.cooldown) 
+        return current_time - click_type_time >= self.cooldown
+            
 button_1 = Button(200, 200, pg.image.load(MENU_PATH + "Achievement.png").convert_alpha())
 
 mouse = Mouse()
@@ -455,8 +463,8 @@ factory = Factory()
 collision_box = pg.Rect(0, 850*C.SCALE_X, 1920*C.SCALE_X, 100*C.SCALE_Y)
 
 item_group = pg.sprite.Group()
-if os.path.getsize('factory_items.json') > 0:
-    for item in json.loads(open('factory_items.json').read()):
+if os.path.getsize('script/factory_items.json') > 0:
+    for item in json.loads(open('script/factory_items.json').read()):
         item_group.add(Item(ITEMS, item[0]))
 
 background = Background(BACKGROUNDS[random.choice(list(BACKGROUNDS.keys()))])
@@ -479,6 +487,7 @@ while True:
         item.draw(screen, GUI["item_menu"])
     factory.draw(screen)
     button_1.draw(screen, mouse, hover = 0.8)
+    button_1.clicked(mouse, 128)
 
     # Event Handling -------------------------------------------------------------------------------------
     for event in pg.event.get():
@@ -490,8 +499,8 @@ while True:
                 item_group.add(Item(ITEMS))
 
         if event.type == pg.QUIT:
-            open('factory_items', 'w').close()
-            with open('factory_items.json', 'w') as file:
+            open('script/factory_items', 'w').close()
+            with open('script/factory_items.json', 'w') as file:
                     json.dump([item.serialize() for item in item_group], file, indent=1)
             pg.quit()
             exit()
