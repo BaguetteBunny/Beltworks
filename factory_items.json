@@ -1,0 +1,118 @@
+[
+ [
+  {
+   "path": "assets/items/common/copper_paladin_helmet.png",
+   "name": "Copper Paladin Helmet",
+   "rarity": {
+    "label": "common",
+    "value": 10,
+    "color": [
+     255,
+     255,
+     255
+    ]
+   },
+   "durability": {
+    "label": "Great",
+    "multiplier": 10,
+    "color": [
+     24,
+     219,
+     112
+    ]
+   },
+   "weight": 2.6604797880776836,
+   "mutations": [],
+   "x": 1036.7542415609432,
+   "y": 637.4276963753466,
+   "angle": 8.660064943694088
+  }
+ ],
+ [
+  {
+   "path": "assets/items/common/copper_knight_boots.png",
+   "name": "Copper Knight Boots",
+   "rarity": {
+    "label": "common",
+    "value": 10,
+    "color": [
+     255,
+     255,
+     255
+    ]
+   },
+   "durability": {
+    "label": "Average",
+    "multiplier": 1,
+    "color": [
+     255,
+     255,
+     255
+    ]
+   },
+   "weight": 1.150689213084502,
+   "mutations": [],
+   "x": 984.9270240637213,
+   "y": 607.6376889598615,
+   "angle": 353.0305189801177
+  }
+ ],
+ [
+  {
+   "path": "assets/items/common/raw_cod.png",
+   "name": "Raw Cod",
+   "rarity": {
+    "label": "common",
+    "value": 10,
+    "color": [
+     255,
+     255,
+     255
+    ]
+   },
+   "durability": {
+    "label": "Bad",
+    "multiplier": 0.75,
+    "color": [
+     247,
+     171,
+     175
+    ]
+   },
+   "weight": 1.7212574342602138,
+   "mutations": [],
+   "x": 962.8125039910936,
+   "y": 642.4414528063452,
+   "angle": 226.7488075060803
+  }
+ ],
+ [
+  {
+   "path": "assets/items/common/copper_paladin_helmet.png",
+   "name": "Copper Paladin Helmet",
+   "rarity": {
+    "label": "common",
+    "value": 10,
+    "color": [
+     255,
+     255,
+     255
+    ]
+   },
+   "durability": {
+    "label": "Bad",
+    "multiplier": 0.75,
+    "color": [
+     247,
+     171,
+     175
+    ]
+   },
+   "weight": 1.711930139981651,
+   "mutations": [],
+   "x": 1002.528196830612,
+   "y": 645.5247213295836,
+   "angle": 30.82826695094868
+  }
+ ]
+]
