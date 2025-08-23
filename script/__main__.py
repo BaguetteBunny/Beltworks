@@ -538,17 +538,18 @@ class Text():
         for img in self.rendered_images:
             if isinstance(self.color, (tuple, list)):
                 screen.blit(img, (img.get_rect(center=(x, y)) if self.centered else (x, y)))
-                y += img.get_height() + 5*C.SCALE_Y
+                y += img.get_height()
 
             else:
+                x = new_pos[0] if new_pos else self.x
                 if self.centered:
-                    x -= self.image.get_width()//2
+                    x -= (self.image.get_width() - img[0].get_width())/2
                 for char in img:
                     if char == "\n" or char == "\t":
                         continue
                     screen.blit(char, (char.get_rect(center=(x, y)) if self.centered else (x, y)))
                     x += char.get_width()
-                y += img[0].get_height() + 5*C.SCALE_Y
+                y += img[0].get_height()
 
     def format_long_number(self):
         string_number = str(int(float(self.text)))
@@ -583,9 +584,6 @@ class Text():
 
 button_1 = Button(200, 200, pg.image.load(MENU_PATH + "Achievement.png").convert_alpha())
 
-test_text = Text(text = "Testing 123", font = FONTS["5XL"], color = RainbowConfig(True), pos = (500,500), is_centered = True)
-test_text2 = Text(text = "Testing 321", font = FONTS["5XL"], color = RainbowConfig(True), pos = (500,500), is_centered = False)
-
 mouse = Mouse()
 factory = Factory()
 collision_box = pg.Rect(0, 850*C.SCALE_X, 1920*C.SCALE_X, 100*C.SCALE_Y)
@@ -616,8 +614,6 @@ while True:
     factory.draw(screen)
     button_1.draw(screen, mouse, hover = 0.8)
     button_1.clicked(mouse, 128)
-    test_text.draw(screen)
-    test_text2.draw(screen)
 
     # Event Handling -------------------------------------------------------------------------------------
     for event in pg.event.get():
