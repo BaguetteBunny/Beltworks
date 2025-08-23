@@ -15,6 +15,8 @@ ASSETS_PATH = "./assets/"
 MENU_PATH = ASSETS_PATH + "./menu/"
 FONTS_PATH = ASSETS_PATH + "./fonts/"
 BACKGROUNDS_PATH = ASSETS_PATH + "./backgrounds/"
+FACTORY_JSON_PATH = "script/factory_items.json"
+STORAGE_JSON_PATH = "script/storage_items.json"
 
 GUI = {
     'item_menu': pg.transform.smoothscale_by(pg.image.load(MENU_PATH + "Item_Menu.png").convert_alpha(), C.SCALE_X*1.5),
@@ -184,13 +186,14 @@ class Item(pg.sprite.Sprite):
         }
         self.text['labeled_value'] = Text(text = f"Value: {self.text['value'].text} ¤", font = FONTS["S"], color = (255,255,255), pos = (self.x, self.y), is_centered = True)
 
-    def update(self, collision_box: pg.Rect, mouse: Mouse, group: pg.sprite.Group) -> None:
+    def update(self, collision_box: pg.Rect, mouse: Mouse, group: pg.sprite.Group, storage_path: str = STORAGE_JSON_PATH) -> None:
         self.y += self.y_velocity
         self.x += self.x_velocity
         self.y_velocity += 0.5 * self.weight
         self.rect.topleft = (self.x, self.y)
         
         self.check_collision(collision_box, mouse, group)
+        self.check_store_item(mouse, group, storage_path)
 
     def check_collision(self, collision_box: pg.Rect, mouse: Mouse, group: pg.sprite.Group) -> None:
         # Check for window collision
@@ -267,6 +270,21 @@ class Item(pg.sprite.Sprite):
                 self.angle %= 360
                 item.angle += (item.x_velocity+item.y_velocity)/(1.5*item.weight)
                 item.angle %= 360
+    
+    def check_store_item(self, mouse: Mouse, group: pg.sprite.Group, storage_path: str) -> None:
+        if self.dragged and mouse.right_clicked:
+            if not os.path.exists(storage_path) or os.path.getsize(storage_path) == 0:
+                data = []
+            else:
+                with open(storage_path, 'r') as file:
+                    data = json.load(file)
+                    
+            data.append(self.storage_serialize())
+            with open(storage_path, 'w') as file:
+                json.dump(data, file, indent=1)
+
+            group.remove(self)
+            del self
 
     def draw(self, screen: pg.Surface, gui: pg.Surface):
         rotated_image = pg.transform.rotate(self.image, self.angle)
@@ -308,6 +326,13 @@ class Item(pg.sprite.Sprite):
         else: return {"label": "Perfect", 'multiplier': 1_000, 'color': RainbowConfig(True)}
 
     def serialize(self) -> dict:
+        serialization = self.storage_serialize()
+        serialization['x'] = self.x
+        serialization['y'] = self.y
+        serialization['angle'] = self.angle
+        return serialization
+    
+    def storage_serialize(self) -> dict:
         rarity_color = vars(self.rarity["color"]) if isinstance(self.rarity['color'], RainbowConfig) else self.rarity['color']
         durability_color = vars(self.durability["color"]) if isinstance(self.durability['color'], RainbowConfig) else self.durability['color']
 
@@ -326,10 +351,7 @@ class Item(pg.sprite.Sprite):
             },
             'weight': self.weight,
             'mutations': self.mutations,
-            'x': self.x,
-            'y': self.y,
-            'angle': self.angle
-        },
+        }
 
     def __str__(self) -> str:
         return f"Item: {self.name}, Rarity: {self.rarity['label'].title()}, Durability: {self.durability['label'].title()}, Weight: {self.weight}, Mutations: {self.mutations}"
@@ -533,9 +555,9 @@ factory = Factory()
 collision_box = pg.Rect(0, 850*C.SCALE_X, 1920*C.SCALE_X, 100*C.SCALE_Y)
 
 item_group = pg.sprite.Group()
-if os.path.getsize('script/factory_items.json') > 0:
-    for item in json.loads(open('script/factory_items.json').read()):
-        item_group.add(Item(ITEMS, item[0]))
+if os.path.getsize(FACTORY_JSON_PATH) > 0:
+    for item in json.loads(open(FACTORY_JSON_PATH).read()):
+        item_group.add(Item(ITEMS, item))
 
 background = Background(BACKGROUNDS[random.choice(list(BACKGROUNDS.keys()))])
 
@@ -571,8 +593,7 @@ while True:
                 item_group.add(Item(ITEMS))
 
         if event.type == pg.QUIT:
-            open('script/factory_items', 'w').close()
-            with open('script/factory_items.json', 'w') as file:
+            with open(FACTORY_JSON_PATH, 'w') as file:
                     json.dump([item.serialize() for item in item_group], file, indent=1)
             pg.quit()
             exit()
