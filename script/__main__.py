@@ -338,7 +338,7 @@ class Item(pg.sprite.Sprite):
         elif selector <= 100_000: return {'label': 'epic', 'value': 100000, 'color': (152, 47, 222)} # 1 in 10K
         elif selector <= 1_000_000: return {'label': 'rare', 'value': 10000, 'color': (56, 107, 194)} # 1 in 1K
         elif selector <= 10_000_000: return {'label': 'uncommon', 'value': 1000, 'color': (56, 194, 93)} # 1 in 100 
-        else: return {'label': 'common', 'value': 1000, 'color': RainbowConfig(True)} # Guarenteed
+        else: return {'label': 'common', 'value': 1000, 'color': RainbowConfig(True, 25)} # Guarenteed
     
     def select_durability(self, selector):
         if selector <= 1: return {'label': "Cursed", 'multiplier': 0, 'color': (31, 9, 10)}
@@ -355,7 +355,7 @@ class Item(pg.sprite.Sprite):
         else: return {"label": "Perfect", 'multiplier': 1_000, 'color': RainbowConfig(True)}
 
     def serialize(self):
-        rarity_color = vars(self.rarity["color"]) if isinstance(self.rarity['color'], RainbowConfig) else self.rarity['colors']
+        rarity_color = vars(self.rarity["color"]) if isinstance(self.rarity['color'], RainbowConfig) else self.rarity['color']
         durability_color = vars(self.durability["color"]) if isinstance(self.durability['color'], RainbowConfig) else self.durability['color']
 
         return {
@@ -536,14 +536,13 @@ class Text():
         x, y = (new_pos[0], new_pos[1]) if new_pos else (self.x, self.y)
 
         for img in self.rendered_images:
-            if isinstance(self.color, tuple):
+            if isinstance(self.color, (tuple, list)):
                 screen.blit(img, (img.get_rect(center=(x, y)) if self.centered else (x, y)))
                 y += img.get_height() + 5*C.SCALE_Y
 
             else:
                 if self.centered:
-                    x += self.image.get_width()//2
-                    y += self.image.get_height()//2
+                    x -= self.image.get_width()//2
                 for char in img:
                     if char == "\n" or char == "\t":
                         continue
