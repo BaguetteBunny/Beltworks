@@ -3,87 +3,6 @@ import constants as C
 import random, math, colorsys, os, json, time
 
 # Text
-def blit_text(img, x, y, centered, split=False, noblit = False):
-    word_width, word_height = img.get_size()
-    if not noblit:
-        screen.blit(img, (img.get_rect(center=(x,y)) if centered else (x,y)))
-    else:
-        return (img, (img.get_rect(center=(x,y)) if centered else (x,y)))
-    return (y+word_height+5 if split else y)
-def draw_text(text, font, text_col, x, y, centered=False, linebreak = False, noblit = False, opacity=None, underline=False, bold=False, italic=False, rainbow_time_offset=0):
-    pg.font.Font.set_underline(font, False)
-    pg.font.Font.set_bold(font, False)
-    pg.font.Font.set_italic(font, False)
-    if underline:
-        pg.font.Font.set_underline(font, True)
-    if bold:
-        pg.font.Font.set_bold(font, True)
-    if italic:
-        pg.font.Font.set_italic(font, True)
-    if text_col == 'RAINBOW' and rainbow_time_offset:
-        return draw_rainbow_text(text, font, x, y, centered, linebreak, noblit, opacity, rainbow_time_offset)
-    if not linebreak and '\n' not in text:
-        img = font.render(text, True, text_col)
-        if opacity:
-            img.set_alpha(opacity)
-        bliting = blit_text(img, x, y, centered, noblit=noblit)
-        if bliting:
-            return bliting
-
-    elif '\n' in text:
-        for word in text.split('\n'):
-            img = font.render(word, True, text_col)
-            y = blit_text(img, x, y, centered, split = True)
-
-    elif linebreak:
-        next_word = ''
-        for word in text.split():
-            if len(word) <= 3:
-                next_word = f'{word} '
-            else:
-                word = next_word + word
-                img = font.render(word, True, text_col)
-                y = blit_text(img, x, y, centered, split = True)
-def draw_rainbow_text(text, font, x, y, centered=False, linebreak=False, noblit=False, opacity=None, time_offset=0):
-    """
-    Renders text with a rainbow animation effect.
-    Each character's hue is slightly shifted, and the colors transition over time.
-    """
-    hue_shift = 10  # Hue shift between characters
-    speed = 0.5     # Speed of hue transition
-    lightness = 80  # Fixed lightness value for HSL
-
-    images = []
-    total_width = 0
-
-    for i, char in enumerate(text):
-        hue = (time_offset * speed + i * hue_shift) % 360
-        r, g, b = [int(c * 255) for c in colorsys.hls_to_rgb(hue / 360, lightness / 100, 1)]
-        color = (r, g, b)
-
-        img = font.render(char, True, color)
-        if opacity:
-            img.set_alpha(opacity)
-        images.append(img)
-        total_width += img.get_width()
-
-    if centered:
-        x -= total_width // 2
-
-    for img in images:
-        blit_text(img, x, y=y-10*C.SCALE_Y, centered=False, noblit=noblit)
-        x += img.get_width()
-
-    return y + images[0].get_height() + 5 if linebreak else y
-def format_long_number(number: int):
-    string_number = str(number)
-    format_list = ['k', 'M', 'B', 'T']
-
-    number_length = len(str(number))
-    number_magnitude = ((number_length-1)//3)-1
-
-    return string_number if number_magnitude < 0 else string_number[:(3 if number_length%3==0 else number_length%3)] + (('.')+string_number[1] if number_length%4 == 0 else '') +f'{format_list[number_magnitude]}'
-
 pg.init()
 clock = pg.time.Clock()
 
@@ -338,7 +257,7 @@ class Item(pg.sprite.Sprite):
         elif selector <= 100_000: return {'label': 'epic', 'value': 100000, 'color': (152, 47, 222)} # 1 in 10K
         elif selector <= 1_000_000: return {'label': 'rare', 'value': 10000, 'color': (56, 107, 194)} # 1 in 1K
         elif selector <= 10_000_000: return {'label': 'uncommon', 'value': 1000, 'color': (56, 194, 93)} # 1 in 100 
-        else: return {'label': 'common', 'value': 1000, 'color': RainbowConfig(True, 25)} # Guarenteed
+        else: return {'label': 'common', 'value': 10, 'color': (255,255,255)} # Guarenteed
     
     def select_durability(self, selector):
         if selector <= 1: return {'label': "Cursed", 'multiplier': 0, 'color': (31, 9, 10)}
