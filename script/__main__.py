@@ -1,7 +1,6 @@
 import pygame as pg
 import constants as C
 import random, math, colorsys, os, json, time
-from dataclasses import dataclass
 
 # Text
 def blit_text(img, x, y, centered, split=False, noblit = False):
@@ -117,9 +116,10 @@ ITEMS["common"] = [
     if item.endswith(".png") and not item.startswith("z")
 ]
 FONTS = {
-    "3XS": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 2),
-    "2XS": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 5),
-    "XS": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 10),
+    "4XS": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 2),
+    "3XS": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 5),
+    "2XS": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 10),
+    "XS": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 15),
     "S": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 20),
     "M": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 30),
     "L": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 40),
@@ -140,11 +140,11 @@ BACKGROUNDS = {
     "cloud_3": [pg.transform.smoothscale_by(pg.image.load(BACKGROUNDS_PATH + "cloud_3.png").convert_alpha(), C.SCALE_X), (250,250)],
 }
 
-@dataclass
 class RainbowConfig:
-    enabled: bool = False
-    hue_step: int = 10
-    fixed_lightness: int = 80
+    def __init__(self, enabled: bool = False, hue_step: int = 10, fixed_lightness: int = 80):
+        self.enabled = enabled
+        self.hue_step = hue_step
+        self.fixed_lightness = fixed_lightness
 
 class Factory():
     def __init__(self):
@@ -190,6 +190,11 @@ class Item(pg.sprite.Sprite):
             self.x = preexisting_item['x']
             self.y = preexisting_item['y']
             self.angle = preexisting_item['angle']
+            
+            if not isinstance(self.rarity['color'], list):
+                self.rarity['color'] = RainbowConfig(True, self.rarity['color']['hue_step'], self.rarity['color']['fixed_lightness'])
+            if not isinstance(self.durability['color'], list):
+                self.durability['color'] = RainbowConfig(True, self.durability['color']['hue_step'], self.durability['color']['fixed_lightness'])
         else:
             self.rarity = self.select_rarity(random.randint(1,1_000_000_000))
             item_picked = random.choice(asset_paths[self.rarity['label']])
@@ -218,7 +223,14 @@ class Item(pg.sprite.Sprite):
 
         self.value = self.rarity["value"] * self.durability["multiplier"]
 
-        self.rainbow_offset = 1 if self.rarity["color"] == "RAINBOW" or self.durability["color"] == "RAINBOW" else 0
+        # Text
+        self.text = {
+            'name': Text(text = f"{self.name}", font = FONTS["XS"], color = (255,255,255), pos = (self.x, self.y), is_centered = True, is_bold = True),
+            'rarity' : Text(text = f"Rarity: {self.rarity['label'].title()}", font = FONTS["S"], color = self.rarity['color'], pos = (self.x, self.y), is_centered = True),
+            'durability' : Text(text = f"Durability: {self.durability['label'].title()}", font = FONTS["S"], color = self.durability['color'], pos = (self.x, self.y), is_centered = True),
+            'value' : Text(text = f"{self.value}", is_number_formatting = True)
+        }
+        self.text['labeled_value'] = Text(text = f"Value: {self.text['value'].text} ¤", font = FONTS["S"], color = (255,255,255), pos = (self.x, self.y), is_centered = True)
 
     def update(self, collision_box, mouse, group):
         self.y += self.y_velocity
@@ -313,21 +325,20 @@ class Item(pg.sprite.Sprite):
             centery = self.rect.centery - gui.get_height() - 20*C.SCALE_Y
             screen.blit(gui, (centerx, centery))
 
-            self.rainbow_offset = 10+(self.rainbow_offset)%3600 if self.rainbow_offset else 0
-            draw_text(f"{self.name}", FONTS["tiny"], (255, 255, 255), self.rect.centerx,centery+389*C.SCALE_Y, centered=True, bold=True, underline=False)
-            draw_text(f"Rarity: {self.rarity['label'].title()}", FONTS["small"], self.rarity['color'], self.rect.centerx, centery+120*C.SCALE_Y, centered=True, rainbow_time_offset=self.rainbow_offset)
-            draw_text(f"Durability: {self.durability['label'].title()}", FONTS["small"], self.durability['color'], self.rect.centerx, centery+145*C.SCALE_Y, centered=True, rainbow_time_offset=self.rainbow_offset)
-            draw_text(f"Value: {format_long_number(self.value)} ¤", FONTS["small"], (255, 255, 255), self.rect.centerx, centery+170*C.SCALE_Y, centered=True)
+            self.text['name'].draw(screen, new_pos = (self.rect.centerx, centery+389*C.SCALE_Y))
+            self.text['rarity'].draw(screen, new_pos = (self.rect.centerx, centery+120*C.SCALE_Y))
+            self.text['durability'].draw(screen, new_pos = (self.rect.centerx, centery+145*C.SCALE_Y))
+            self.text['labeled_value'].draw(screen, new_pos = (self.rect.centerx, centery+170*C.SCALE_Y))
 
     def select_rarity(self, selector):
-        if selector == 1: return {'label': 'supreme', 'value': 1000000000, 'color': 'RAINBOW'} # 1 in 1B
+        if selector == 1: return {'label': 'supreme', 'value': 1000000000, 'color': RainbowConfig(True)} # 1 in 1B
         elif selector <= 100: return {'label': 'mythic', 'value': 100000000, 'color': (212, 76, 115)} # 1 in 10M
         elif selector <= 1_000: return {'label': 'fabled', 'value': 10000000, 'color': (255, 5, 5)} # 1 in 100M
         elif selector <= 10_000: return {'label': 'legendary', 'value': 1000000, 'color': (240, 203, 58)} # 1 in 100K
         elif selector <= 100_000: return {'label': 'epic', 'value': 100000, 'color': (152, 47, 222)} # 1 in 10K
         elif selector <= 1_000_000: return {'label': 'rare', 'value': 10000, 'color': (56, 107, 194)} # 1 in 1K
         elif selector <= 10_000_000: return {'label': 'uncommon', 'value': 1000, 'color': (56, 194, 93)} # 1 in 100 
-        else: return {'label': 'common', 'value': 10, 'color': (255,255,255)} # Guarenteed
+        else: return {'label': 'common', 'value': 1000, 'color': RainbowConfig(True)} # Guarenteed
     
     def select_durability(self, selector):
         if selector <= 1: return {'label': "Cursed", 'multiplier': 0, 'color': (31, 9, 10)}
@@ -341,14 +352,25 @@ class Item(pg.sprite.Sprite):
         elif selector <= 85: return {"label": "Great", 'multiplier': 10, 'color': (24, 219, 112)}
         elif selector <= 95: return {"label": "Pristine", 'multiplier': 25, 'color': (93, 224, 49)}
         elif selector <= 99: return {"label": "Divine", 'multiplier': 50, 'color': (106, 255, 0)}
-        else: return {"label": "Perfect", 'multiplier': 1_000, 'color': 'RAINBOW'}
+        else: return {"label": "Perfect", 'multiplier': 1_000, 'color': RainbowConfig(True)}
 
     def serialize(self):
+        rarity_color = vars(self.rarity["color"]) if isinstance(self.rarity['color'], RainbowConfig) else self.rarity['colors']
+        durability_color = vars(self.durability["color"]) if isinstance(self.durability['color'], RainbowConfig) else self.durability['color']
+
         return {
             'path': self.path,
             'name': self.name,
-            'rarity': self.rarity,
-            'durability': self.durability,
+            'rarity': {
+                'label': self.rarity['label'],
+                'value': self.rarity['value'],
+                'color': rarity_color,
+            },
+            'durability': {
+                'label': self.durability['label'],
+                'multiplier': self.durability['multiplier'],
+                'color': durability_color,
+            },
             'weight': self.weight,
             'mutations': self.mutations,
             'x': self.x,
@@ -357,7 +379,7 @@ class Item(pg.sprite.Sprite):
         },
 
     def __str__(self):
-        return f"Item: {self.name}, Rarity: {self.rarity['label'].title()}, Durability: {self.durability_label}, Weight: {self.weight}, Mutations: {self.mutations}"
+        return f"Item: {self.name}, Rarity: {self.rarity['label'].title()}, Durability: {self.durability['label'].title()}, Weight: {self.weight}, Mutations: {self.mutations}"
 
 class Background():
     def __init__(self, data):
@@ -475,15 +497,14 @@ class Text():
     def __init__(self,
                  text: str = 'Empty Text Layer',
                  font: pg.font = FONTS["M"] ,
-                 color: tuple = (0,0,0),
+                 color: tuple | RainbowConfig = (0,0,0),
                  pos: tuple = (0,0),
                  opacity: int = 255,
                  is_centered: bool = False,
                  is_bold: bool = False,
                  is_italic: bool = False,
                  is_underline: bool = False,
-                 is_rainbow: RainbowConfig = RainbowConfig(),
-                 has_number_formatting: bool = False):
+                 is_number_formatting: bool = False):
 
         self.text = text
         self.font = font
@@ -495,7 +516,6 @@ class Text():
         self.bold = is_bold
         self.italic = is_italic
         self.underline = is_underline
-        self.rainbow = is_rainbow
         self.rendered_images = []
         
         pg.font.Font.set_bold(self.font, False)
@@ -504,7 +524,7 @@ class Text():
         if self.bold: pg.font.Font.set_bold(font, True)
         if self.italic: pg.font.Font.set_italic(font, True)
         if self.underline: pg.font.Font.set_underline(font, True)
-        if has_number_formatting: self.text = self.format_long_number()
+        if is_number_formatting: self.text = self.format_long_number()
 
         if not "\n" in self.text:
             self.rendered_images.append(self.render_text(self.text))
@@ -512,39 +532,35 @@ class Text():
             for word in self.text.split('\n'):
                 self.rendered_images.append(self.render_text(word))
         
-    def draw(self, screen: pg.display):
-        y = self.y
+    def draw(self, screen: pg.display, new_pos: tuple | None = None):
+        if new_pos:
+            x = new_pos[0]
+            y = new_pos[1]
+        else:
+            x = self.x
+            y = self.y
+
         for img in self.rendered_images:
-            if not self.rainbow.enabled:
-                screen.blit(img, (img.get_rect(center=(self.x, y)) if self.centered else (self.x, y)))
+            if isinstance(self.color, (tuple, list)):
+                screen.blit(img, (img.get_rect(center=(x, y)) if self.centered else (x, y)))
                 y += C.SCALE_Y * (img.get_height() + 5)
 
             else:
-                x = self.x
                 for char in img:
                     screen.blit(char, (char.get_rect(center=(x, y)) if self.centered else (x, y)))
                     x += C.SCALE_X * (char.get_width() + 5)
                 y += C.SCALE_Y * (img[0].get_height() + 5)
 
     def format_long_number(self):
-        assert self.is_number()
-
-        string_number = str(int(self.text))
+        string_number = str(int(float(self.text)))
         format_list = ['k', 'M', 'B', 'T']
         
-        number_length = len(self.text)
+        number_length = len(string_number)
         number_magnitude = ((number_length-1)//3)-1
         return string_number if number_magnitude < 0 else string_number[:(3 if number_length%3==0 else number_length%3)] + (('.')+string_number[1] if number_length%4 == 0 else '') +f'{format_list[number_magnitude]}'
-
-    def is_number(self):
-        try:
-            float(self.text)
-            return True
-        except ValueError:
-            return False
     
     def render_text(self, text) -> pg.image:
-        if self.rainbow.enabled:
+        if isinstance(self.color, RainbowConfig) and self.color.enabled:
             image_array = []
             rainbow_iter = self.rainbow_generator()
             for char in self.text:
@@ -561,17 +577,15 @@ class Text():
     def rainbow_generator(self):
         hue = 0
         while True:
-            r, g, b = [int(c*255) for c in colorsys.hsv_to_rgb(hue / 360.0, 1, self.rainbow.fixed_lightness / 100.0)]
-            yield (r,g,b)
-            hue = (hue + self.rainbow.hue_step) % 360
+            rainbow_colour = [int(c*255) for c in colorsys.hsv_to_rgb(hue / 360.0, 1, self.color.fixed_lightness / 100.0)]
+            yield rainbow_colour
+            hue = (hue + self.color.hue_step) % 360
 
 button_1 = Button(200, 200, pg.image.load(MENU_PATH + "Achievement.png").convert_alpha())
 
 mouse = Mouse()
 factory = Factory()
 collision_box = pg.Rect(0, 850*C.SCALE_X, 1920*C.SCALE_X, 100*C.SCALE_Y)
-
-test_text = Text(text = "Hey world HAHAHAHAHHAHAHAHAHA", color = (255,128,255), pos=(500,500), font=FONTS['XL'], rainbow=RainbowConfig(enabled=True, hue_step = 10, fixed_lightness = 80))
 
 item_group = pg.sprite.Group()
 if os.path.getsize('script/factory_items.json') > 0:
@@ -599,7 +613,6 @@ while True:
     factory.draw(screen)
     button_1.draw(screen, mouse, hover = 0.8)
     button_1.clicked(mouse, 128)
-    test_text.draw(screen)
 
     # Event Handling -------------------------------------------------------------------------------------
     for event in pg.event.get():
