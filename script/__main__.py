@@ -1,6 +1,6 @@
 import pygame as pg
 import constants as C
-import random, math, colorsys, os, json, time
+import random, math, colorsys, os, json, time, enum
 
 # Text
 pg.init()
@@ -65,7 +65,12 @@ class RainbowConfig:
         self.hue_step = hue_step
         self.fixed_lightness = fixed_lightness
 
-class Factory():
+class Shapes(enum.Enum):
+    CIRCLE = "circle"
+    SQUARE = "square"
+    TRIANGLE = "triangle"
+
+class Factory:
     def __init__(self):
         self.background = pg.Surface(screen.get_size())
         self.background.fill((0, 0, 0))
@@ -86,7 +91,6 @@ class Factory():
         self.animation_cooldown = (self.animation_cooldown+1)%6
         if not self.animation_cooldown:
             self.update_animation()
-
 
     def update_animation(self):
         self.current_frame = (self.current_frame+1)%len(self.animation_list)
@@ -300,7 +304,7 @@ class Item(pg.sprite.Sprite):
     def __str__(self):
         return f"Item: {self.name}, Rarity: {self.rarity['label'].title()}, Durability: {self.durability['label'].title()}, Weight: {self.weight}, Mutations: {self.mutations}"
 
-class Background():
+class Background:
     def __init__(self, data):
         self.image = data[0]
         self.x = -data[1][0]*C.SCALE_X
@@ -329,7 +333,7 @@ class Mouse(pg.sprite.Sprite):
         if not self.left_clicked and self.is_dragging:
             self.is_dragging = False
 
-class Button():
+class Button:
     def __init__(self, x, y, image, click_side: tuple = (True, False), cd = 0.33, animated: tuple = (0, 0)):
         self.image = image
         self.pos = (x,y)
@@ -416,8 +420,8 @@ class Text():
     def __init__(self,
                  text: str = 'Empty Text Layer',
                  font: pg.font = FONTS["M"] ,
-                 color: tuple | RainbowConfig = (0,0,0),
-                 pos: tuple = (0,0),
+                 color: tuple[int, int, int] | RainbowConfig = (0, 0, 0),
+                 pos: tuple[float, float] = (0.0, 0.0),
                  opacity: int = 255,
                  is_centered: bool = False,
                  is_bold: bool = False,
@@ -501,8 +505,17 @@ class Text():
             yield rainbow_colour
             hue = (hue + self.color.hue_step) % 360
 
-button_1 = Button(200, 200, pg.image.load(MENU_PATH + "Achievement.png").convert_alpha())
+class Particle():
+    def __init__(self,
+                 shape: Shapes = Shapes.CIRCLE,
+                 color: tuple [int, int, int] = (0, 0, 0),
+                 pos: tuple[float, float] = (0.0, 0.0),
+                 velocity: tuple[float, float] = (0.0, 0.0),
+                 quantity: int = 1,
+                 gravity: float = 1): ...
 
+
+button_1 = Button(200, 200, pg.image.load(MENU_PATH + "Achievement.png").convert_alpha())
 mouse = Mouse()
 factory = Factory()
 collision_box = pg.Rect(0, 850*C.SCALE_X, 1920*C.SCALE_X, 100*C.SCALE_Y)
@@ -522,17 +535,19 @@ while True:
     # Update ---------------------------------------------------------------------------------------------
     pg.display.update()
     mouse.update()
-    item_group.update(collision_box, mouse, item_group)
-    factory.update()
+    if factory:
+        item_group.update(collision_box, mouse, item_group)
+        factory.update()
 
     # Draw -----------------------------------------------------------------------------------------------
     screen.fill((0, 0, 0))
     background.draw(screen)
-    for item in item_group:
-        item.draw(screen, GUI["item_menu"])
-    factory.draw(screen)
-    button_1.draw(screen, mouse, hover = 0.8)
-    button_1.clicked(mouse, 128)
+    if factory:
+        for item in item_group:
+            item.draw(screen, GUI["item_menu"])
+        factory.draw(screen)
+        button_1.draw(screen, mouse, hover = 0.8)
+        button_1.clicked(mouse, 128)
 
     # Event Handling -------------------------------------------------------------------------------------
     for event in pg.event.get():
