@@ -472,7 +472,19 @@ class Button():
         return current_time - click_type_time >= self.cooldown
 
 class Text():
-    def __init__(self, text: str = 'Empty Text Layer', font: pg.font = FONTS["M"] , color: tuple = (0,0,0), pos: tuple = (0,0), opacity: int = 255, is_centered: bool = False, is_bold: bool = False, is_italic: bool = False, is_underline: bool = False, rainbow: RainbowConfig = RainbowConfig(), has_number_formatting: bool = False):
+    def __init__(self,
+                 text: str = 'Empty Text Layer',
+                 font: pg.font = FONTS["M"] ,
+                 color: tuple = (0,0,0),
+                 pos: tuple = (0,0),
+                 opacity: int = 255,
+                 is_centered: bool = False,
+                 is_bold: bool = False,
+                 is_italic: bool = False,
+                 is_underline: bool = False,
+                 is_rainbow: RainbowConfig = RainbowConfig(),
+                 has_number_formatting: bool = False):
+
         self.text = text
         self.font = font
         self.color = color
@@ -483,7 +495,7 @@ class Text():
         self.bold = is_bold
         self.italic = is_italic
         self.underline = is_underline
-        self.rainbow = rainbow
+        self.rainbow = is_rainbow
         self.rendered_images = []
         
         pg.font.Font.set_bold(self.font, False)
