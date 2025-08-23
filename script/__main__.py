@@ -504,7 +504,7 @@ class Text():
                  is_bold: bool = False,
                  is_italic: bool = False,
                  is_underline: bool = False,
-                 is_number_formatting: bool = False):
+                 is_number_formatting: bool = False) -> None:
 
         self.text = text
         self.font = font
@@ -533,23 +533,23 @@ class Text():
                 self.rendered_images.append(self.render_text(word))
         
     def draw(self, screen: pg.display, new_pos: tuple | None = None):
-        if new_pos:
-            x = new_pos[0]
-            y = new_pos[1]
-        else:
-            x = self.x
-            y = self.y
+        x, y = (new_pos[0], new_pos[1]) if new_pos else (self.x, self.y)
 
         for img in self.rendered_images:
-            if isinstance(self.color, (tuple, list)):
+            if isinstance(self.color, tuple):
                 screen.blit(img, (img.get_rect(center=(x, y)) if self.centered else (x, y)))
-                y += C.SCALE_Y * (img.get_height() + 5)
+                y += img.get_height() + 5*C.SCALE_Y
 
             else:
+                if self.centered:
+                    x += self.image.get_width()//2
+                    y += self.image.get_height()//2
                 for char in img:
+                    if char == "\n" or char == "\t":
+                        continue
                     screen.blit(char, (char.get_rect(center=(x, y)) if self.centered else (x, y)))
-                    x += C.SCALE_X * (char.get_width() + 5)
-                y += C.SCALE_Y * (img[0].get_height() + 5)
+                    x += char.get_width()
+                y += img[0].get_height() + 5*C.SCALE_Y
 
     def format_long_number(self):
         string_number = str(int(float(self.text)))
@@ -563,16 +563,17 @@ class Text():
         if isinstance(self.color, RainbowConfig) and self.color.enabled:
             image_array = []
             rainbow_iter = self.rainbow_generator()
-            for char in self.text:
+            for char in text:
                 new_color = next(rainbow_iter)
                 image = self.font.render(char, True, new_color)
                 image.set_alpha(self.opacity)
                 image_array.append(image)
+            self.image = self.font.render(text, True, (0,0,0))
             return image_array
         else:
-            image = self.font.render(text, True, self.color)
-            image.set_alpha(self.opacity)
-            return image
+            self.image = self.font.render(text, True, self.color)
+            self.image.set_alpha(self.opacity)
+            return self.image
     
     def rainbow_generator(self):
         hue = 0
@@ -582,6 +583,9 @@ class Text():
             hue = (hue + self.color.hue_step) % 360
 
 button_1 = Button(200, 200, pg.image.load(MENU_PATH + "Achievement.png").convert_alpha())
+
+test_text = Text(text = "Testing 123", font = FONTS["5XL"], color = RainbowConfig(True), pos = (500,500), is_centered = True)
+test_text2 = Text(text = "Testing 321", font = FONTS["5XL"], color = RainbowConfig(True), pos = (500,500), is_centered = False)
 
 mouse = Mouse()
 factory = Factory()
@@ -613,6 +617,8 @@ while True:
     factory.draw(screen)
     button_1.draw(screen, mouse, hover = 0.8)
     button_1.clicked(mouse, 128)
+    test_text.draw(screen)
+    test_text2.draw(screen)
 
     # Event Handling -------------------------------------------------------------------------------------
     for event in pg.event.get():
