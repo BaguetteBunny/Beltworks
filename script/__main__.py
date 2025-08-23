@@ -60,7 +60,7 @@ BACKGROUNDS = {
 }
 
 class RainbowConfig:
-    def __init__(self, enabled: bool = False, hue_step: int = 10, fixed_lightness: int = 80):
+    def __init__(self, enabled: bool = False, hue_step: int = 10, fixed_lightness: int = 80) -> None:
         self.enabled = enabled
         self.hue_step = hue_step
         self.fixed_lightness = fixed_lightness
@@ -71,7 +71,7 @@ class Shapes(enum.Enum):
     TRIANGLE = "triangle"
 
 class Factory:
-    def __init__(self):
+    def __init__(self) -> None:
         self.background = pg.Surface(screen.get_size())
         self.background.fill((0, 0, 0))
         self.background.set_alpha(0)
@@ -87,22 +87,52 @@ class Factory:
         self.current_frame = 0
         self.image = self.animation_list[self.current_frame]
 
-    def update(self):
+    def update(self) -> None:
         self.animation_cooldown = (self.animation_cooldown+1)%6
         if not self.animation_cooldown:
             self.update_animation()
 
-    def update_animation(self):
+    def update_animation(self) -> None:
         self.current_frame = (self.current_frame+1)%len(self.animation_list)
         self.image = self.animation_list[self.current_frame]
 
-    def draw(self, surface):
-        surface.blit(self.background, (0, 0))
-        surface.blit(self.image, (0,0))
+    def draw(self, screen: pg.Surface) -> None:
+        screen.blit(self.background, (0, 0))
+        screen.blit(self.image, (0,0))
+
+class Background:
+    def __init__(self, data: list) -> None:
+        self.image: pg.Surface = data[0]
+        self.x = -data[1][0]*C.SCALE_X
+        self.y = -data[1][1]*C.SCALE_Y
+        self.rect = self.image.get_rect(topleft=(self.x,self.y))
+
+    def draw(self, screen: pg.Surface) -> None:
+        screen.blit(self.image, self.rect.topleft)
+
+class Mouse(pg.sprite.Sprite):
+    def __init__(self) -> None:
+        super().__init__()
+        self.rect = pg.Rect(0, 0, 1, 1)
+        self.pos = ()
+        self.is_dragging = False
+
+    def update(self) -> None:
+        self.rect.topleft = self.pos = pg.mouse.get_pos()
+        buttons = pg.mouse.get_pressed()
+        self.left_clicked = buttons[0]
+        self.right_clicked = buttons[2]
+        self.middle_clicked = buttons[1]
+        self.wheel_up = pg.mouse.get_rel()[1] < 0
+        self.wheel_down = pg.mouse.get_rel()[1] > 0
+
+        if not self.left_clicked and self.is_dragging:
+            self.is_dragging = False
 
 class Item(pg.sprite.Sprite):
-    def __init__(self, asset_paths, preexisting_item=None):
+    def __init__(self, asset_paths: dict, preexisting_item: dict | None = None) -> None:
         pg.sprite.Sprite.__init__(self)
+
         if preexisting_item:
             self.path = preexisting_item['path']
             self.name = preexisting_item['name']
@@ -132,7 +162,6 @@ class Item(pg.sprite.Sprite):
             self.y = -100*C.SCALE_Y
             self.angle = 0
 
-
         self.dragged = False
         self.old_mouse_pos = ()
         self.y_velocity = 0
@@ -155,7 +184,7 @@ class Item(pg.sprite.Sprite):
         }
         self.text['labeled_value'] = Text(text = f"Value: {self.text['value'].text} ¤", font = FONTS["S"], color = (255,255,255), pos = (self.x, self.y), is_centered = True)
 
-    def update(self, collision_box, mouse, group):
+    def update(self, collision_box: pg.Rect, mouse: Mouse, group: pg.sprite.Group) -> None:
         self.y += self.y_velocity
         self.x += self.x_velocity
         self.y_velocity += 0.5 * self.weight
@@ -163,7 +192,7 @@ class Item(pg.sprite.Sprite):
         
         self.check_collision(collision_box, mouse, group)
 
-    def check_collision(self, collision_box, mouse, group):
+    def check_collision(self, collision_box: pg.Rect, mouse: Mouse, group: pg.sprite.Group) -> None:
         # Check for window collision
         if self.x < 0:
             self.x = 0
@@ -210,6 +239,7 @@ class Item(pg.sprite.Sprite):
             self.dragged = False
 
         for item in group:
+            item: Item
             if item != self and self.rect.colliderect(item.rect):
                 dx = self.rect.centerx - item.rect.centerx
                 dy = self.rect.centery - item.rect.centery
@@ -238,7 +268,7 @@ class Item(pg.sprite.Sprite):
                 item.angle += (item.x_velocity+item.y_velocity)/(1.5*item.weight)
                 item.angle %= 360
 
-    def draw(self, screen, gui):
+    def draw(self, screen: pg.Surface, gui: pg.Surface):
         rotated_image = pg.transform.rotate(self.image, self.angle)
         new_rect = rotated_image.get_rect(center=self.rect.center)
         screen.blit(rotated_image, new_rect.topleft)
@@ -253,7 +283,7 @@ class Item(pg.sprite.Sprite):
             self.text['durability'].draw(screen, new_pos = (self.rect.centerx, centery+145*C.SCALE_Y))
             self.text['labeled_value'].draw(screen, new_pos = (self.rect.centerx, centery+170*C.SCALE_Y))
 
-    def select_rarity(self, selector):
+    def select_rarity(self, selector: float) -> dict:
         if selector == 1: return {'label': 'supreme', 'value': 1000000000, 'color': RainbowConfig(True)} # 1 in 1B
         elif selector <= 100: return {'label': 'mythic', 'value': 100000000, 'color': (212, 76, 115)} # 1 in 10M
         elif selector <= 1_000: return {'label': 'fabled', 'value': 10000000, 'color': (255, 5, 5)} # 1 in 100M
@@ -263,7 +293,7 @@ class Item(pg.sprite.Sprite):
         elif selector <= 10_000_000: return {'label': 'uncommon', 'value': 1000, 'color': (56, 194, 93)} # 1 in 100 
         else: return {'label': 'common', 'value': 10, 'color': (255,255,255)} # Guarenteed
     
-    def select_durability(self, selector):
+    def select_durability(self, selector: float) -> dict:
         if selector <= 1: return {'label': "Cursed", 'multiplier': 0, 'color': (31, 9, 10)}
         elif selector <= 10: return {'label': "Shattered", 'multiplier': 0.1, 'color': (89, 12, 16)}
         elif selector <= 20: return {'label': "Broken", 'multiplier': 0.25, 'color': (130, 23, 29)}
@@ -277,7 +307,7 @@ class Item(pg.sprite.Sprite):
         elif selector <= 99: return {"label": "Divine", 'multiplier': 50, 'color': (106, 255, 0)}
         else: return {"label": "Perfect", 'multiplier': 1_000, 'color': RainbowConfig(True)}
 
-    def serialize(self):
+    def serialize(self) -> dict:
         rarity_color = vars(self.rarity["color"]) if isinstance(self.rarity['color'], RainbowConfig) else self.rarity['color']
         durability_color = vars(self.durability["color"]) if isinstance(self.durability['color'], RainbowConfig) else self.durability['color']
 
@@ -301,42 +331,19 @@ class Item(pg.sprite.Sprite):
             'angle': self.angle
         },
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Item: {self.name}, Rarity: {self.rarity['label'].title()}, Durability: {self.durability['label'].title()}, Weight: {self.weight}, Mutations: {self.mutations}"
 
-class Background:
-    def __init__(self, data):
-        self.image = data[0]
-        self.x = -data[1][0]*C.SCALE_X
-        self.y = -data[1][1]*C.SCALE_Y
-        self.rect = self.image.get_rect(topleft=(self.x,self.y))
-
-    def draw(self, surface):
-        surface.blit(self.image, self.rect.topleft)
-
-class Mouse(pg.sprite.Sprite):
-    def __init__(self) -> None:
-        super().__init__()
-        self.rect = pg.Rect(0, 0, 1, 1)
-        self.pos = ()
-        self.is_dragging = False
-
-    def update(self) -> None:
-        self.rect.topleft = self.pos = pg.mouse.get_pos()
-        buttons = pg.mouse.get_pressed()
-        self.left_clicked = buttons[0]
-        self.right_clicked = buttons[2]
-        self.middle_clicked = buttons[1]
-        self.wheel_up = pg.mouse.get_rel()[1] < 0
-        self.wheel_down = pg.mouse.get_rel()[1] > 0
-
-        if not self.left_clicked and self.is_dragging:
-            self.is_dragging = False
-
 class Button:
-    def __init__(self, x, y, image, click_side: tuple = (True, False), cd = 0.33, animated: tuple = (0, 0)):
+    def __init__(self,
+                 image: pg.Surface,
+                 pos: tuple[float | int, float | int] = (0.0, 0.0),
+                 click_side: tuple = (True, False),
+                 cd: float = 0.33,
+                 animated: tuple[int, int] = (0, 0)) -> None:
+        
         self.image = image
-        self.pos = (x,y)
+        self.pos = pos
         self.animated = None
         self.rect = self.image.get_rect()
         self.rect.topleft = self.pos
@@ -364,7 +371,7 @@ class Button:
             self.frame = 0
             self.image = self.animation_list[self.frame]
 
-    def draw(self, screen: pg.display, rescale = None, opacity = 255, rotation = None, hover = None):
+    def draw(self, screen: pg.Surface, rescale: float | int | None = None, opacity: int = 255, rotation: float | int | None = None) -> None:
         # Button Animation
         if self.animated:
             self.image = self.animation_list[self.frame]
@@ -390,7 +397,7 @@ class Button:
         # Button Draw
         screen.blit(self.image, self.rect)
 
-    def clicked(self, mouse: Mouse, click_opacity = 0):
+    def clicked(self, mouse: Mouse, click_opacity: float | int = 0) -> bool:
         current_time = time.time()
         
         if self.left_click_enabled and mouse.left_clicked and self.rect.collidepoint(mouse.pos):
@@ -398,7 +405,6 @@ class Button:
                 self.last_left_click_time = current_time
                 if isinstance(click_opacity, (int, float)):
                     self.opacity = click_opacity
-            
                 return True
 
         if self.right_click_enabled and mouse.right_clicked and self.rect.collidepoint(mouse.pos):
@@ -406,20 +412,23 @@ class Button:
                 self.last_right_click_time = current_time
                 if isinstance(click_opacity, (int, float)):
                     self.opacity = click_opacity
-
                 return True
+    
+        return False
             
-    def is_cooldownless(self, current_time = None, click_type_time = None) -> bool:
+    def is_cooldownless(self, current_time: float | None = None, click_type_time: float | None = None) -> bool:
         if not current_time:
             current_time = time.time()
+
         if not click_type_time:
             return (current_time - self.last_left_click_time >= self.cooldown) and (current_time - self.last_right_click_time >= self.cooldown) 
+        
         return current_time - click_type_time >= self.cooldown
 
-class Text():
+class Text:
     def __init__(self,
                  text: str = 'Empty Text Layer',
-                 font: pg.font = FONTS["M"] ,
+                 font: pg.font.Font = FONTS["M"] ,
                  color: tuple[int, int, int] | RainbowConfig = (0, 0, 0),
                  pos: tuple[float, float] = (0.0, 0.0),
                  opacity: int = 255,
@@ -428,7 +437,7 @@ class Text():
                  is_italic: bool = False,
                  is_underline: bool = False,
                  is_number_formatting: bool = False) -> None:
-
+        
         self.text = text
         self.font = font
         self.color = color
@@ -455,26 +464,29 @@ class Text():
             for word in self.text.split('\n'):
                 self.rendered_images.append(self.render_text(word))
         
-    def draw(self, screen: pg.display, new_pos: tuple | None = None):
+    def draw(self, screen: pg.Surface, new_pos: tuple[float | int, float | int] | None = None) -> None:
         x, y = (new_pos[0], new_pos[1]) if new_pos else (self.x, self.y)
 
         for img in self.rendered_images:
             if isinstance(self.color, (tuple, list)):
+                img: pg.Surface
                 screen.blit(img, (img.get_rect(center=(x, y)) if self.centered else (x, y)))
                 y += img.get_height()
 
             else:
+                img: list[pg.Surface]
                 x = new_pos[0] if new_pos else self.x
                 if self.centered:
                     x -= (self.image.get_width() - img[0].get_width())/2
+
                 for char in img:
-                    if char == "\n" or char == "\t":
-                        continue
+                    char: pg.Surface
                     screen.blit(char, (char.get_rect(center=(x, y)) if self.centered else (x, y)))
                     x += char.get_width()
+
                 y += img[0].get_height()
 
-    def format_long_number(self):
+    def format_long_number(self) -> str:
         string_number = str(int(float(self.text)))
         format_list = ['k', 'M', 'B', 'T']
         
@@ -482,7 +494,7 @@ class Text():
         number_magnitude = ((number_length-1)//3)-1
         return string_number if number_magnitude < 0 else string_number[:(3 if number_length%3==0 else number_length%3)] + (('.')+string_number[1] if number_length%4 == 0 else '') +f'{format_list[number_magnitude]}'
     
-    def render_text(self, text) -> pg.image:
+    def render_text(self, text: str) -> pg.Surface:
         if isinstance(self.color, RainbowConfig) and self.color.enabled:
             image_array = []
             rainbow_iter = self.rainbow_generator()
@@ -493,6 +505,7 @@ class Text():
                 image_array.append(image)
             self.image = self.font.render(text, True, (0,0,0))
             return image_array
+        
         else:
             self.image = self.font.render(text, True, self.color)
             self.image.set_alpha(self.opacity)
@@ -505,17 +518,16 @@ class Text():
             yield rainbow_colour
             hue = (hue + self.color.hue_step) % 360
 
-class Particle():
+class Particle:
     def __init__(self,
                  shape: Shapes = Shapes.CIRCLE,
                  color: tuple [int, int, int] = (0, 0, 0),
                  pos: tuple[float, float] = (0.0, 0.0),
                  velocity: tuple[float, float] = (0.0, 0.0),
                  quantity: int = 1,
-                 gravity: float = 1): ...
+                 gravity: float = 1) -> None: ...
 
-
-button_1 = Button(200, 200, pg.image.load(MENU_PATH + "Achievement.png").convert_alpha())
+button_1 = Button(image = pg.image.load(MENU_PATH + "Achievement.png").convert_alpha(), pos = (200, 200))
 mouse = Mouse()
 factory = Factory()
 collision_box = pg.Rect(0, 850*C.SCALE_X, 1920*C.SCALE_X, 100*C.SCALE_Y)
@@ -546,7 +558,7 @@ while True:
         for item in item_group:
             item.draw(screen, GUI["item_menu"])
         factory.draw(screen)
-        button_1.draw(screen, mouse, hover = 0.8)
+        button_1.draw(screen, mouse)
         button_1.clicked(mouse, 128)
 
     # Event Handling -------------------------------------------------------------------------------------
