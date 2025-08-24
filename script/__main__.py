@@ -7,7 +7,7 @@ pg.init()
 clock = pg.time.Clock()
 
 largest_size = pg.display.list_modes()[0]
-screen = pg.display.set_mode(largest_size, pg.FULLSCREEN | pg.HWACCEL | pg.HWSURFACE)
+SCREEN = pg.display.set_mode(largest_size, pg.FULLSCREEN | pg.HWACCEL | pg.HWSURFACE)
 pg.display.set_caption("Testing")
 
 # Assets
@@ -16,9 +16,10 @@ MENU_PATH = ASSETS_PATH + "./menu/"
 FONTS_PATH = ASSETS_PATH + "./fonts/"
 BACKGROUNDS_PATH = ASSETS_PATH + "./backgrounds/"
 
-FACTORY_JSON_PATH = "db/factory_items.json"
-STORAGE_JSON_PATH = "db/storage_items.json"
-PLAYER_JSON_PATH = "db/stats.json"
+DB_PATH = "db/"
+FACTORY_JSON_PATH = DB_PATH + "factory_items.json"
+STORAGE_JSON_PATH = DB_PATH + "storage_items.json"
+PLAYER_JSON_PATH = DB_PATH +"stats.json"
 
 GUI = {
     'item_menu': pg.transform.smoothscale_by(pg.image.load(MENU_PATH + "Item_Menu.png").convert_alpha(), C.SCALE_X*1.5),
@@ -74,8 +75,21 @@ class Shapes(enum.Enum):
     SQUARE = "square"
     TRIANGLE = "triangle"
 
+class SellBox(pg.Rect):
+    def __init__(self, left: float, top: float, width: float, height: float):
+        super().__init__(left, top, width, height)
+        self.left = left
+        self.top = top
+        self.height = height
+        self.width = width
+
+    def update(self, particle_list: list):
+        for i in range(0, int(self.width), 2):
+            rv = random.random()**2 / 1.5
+            particle_list.append(Particle(color = [255,254,181,255], pos = (self.left + i, self.top + self.height), size = 1, velocity = (0.5,-2), gravity = 0, timer = rv, is_randomized = (True, False)))
+
 class Factory:
-    def __init__(self) -> None:
+    def __init__(self, screen: pg.Surface = SCREEN) -> None:
         self.background = pg.Surface(screen.get_size())
         self.background.fill((0, 0, 0))
         self.background.set_alpha(0)
@@ -207,14 +221,22 @@ class Item(pg.sprite.Sprite):
         }
         self.text['labeled_value'] = Text(text = f"Value: {self.text['value'].text} ¤", font = FONTS["S"], color = (255,255,255), pos = (self.x, self.y), is_centered = True)
 
-    def update(self, collision_box: pg.Rect, player: Player, group: pg.sprite.Group, storage_path: str = STORAGE_JSON_PATH) -> None:
+    def update(self, player: Player, group: pg.sprite.Group, collision_box: pg.Rect, sell_box: pg.Rect, storage_path: str = STORAGE_JSON_PATH) -> None:
         self.y += self.y_velocity
         self.x += self.x_velocity
         self.y_velocity += 0.5 * self.weight
         self.rect.topleft = (self.x, self.y)
         
+        self.check_sell(sell_box, player, group)
         self.check_collision(collision_box, player, group)
         self.check_store_item(player, group, storage_path)
+
+    def check_sell(self, sell_box: pg.Rect, player: Player, group: pg.sprite.Group) -> None:
+        if self.rect.colliderect(sell_box):
+            player.currency += self.value
+
+            group.remove(self)
+            del self
 
     def check_collision(self, collision_box: pg.Rect, player: Player, group: pg.sprite.Group) -> None:
         # Check for window collision
@@ -507,7 +529,7 @@ class Text:
             for word in self.text.split('\n'):
                 self.rendered_images.append(self.render_text(word))
         
-    def draw(self, screen: pg.Surface, new_pos: tuple[float | int, float | int] | None = None) -> None:
+    def draw(self, screen: pg.Surface = SCREEN, new_pos: tuple[float | int, float | int] | None = None) -> None:
         x, y = (new_pos[0], new_pos[1]) if new_pos else (self.x, self.y)
 
         for img in self.rendered_images:
@@ -564,7 +586,7 @@ class Text:
 class Particle:
     def __init__(self,
                  shape: Shapes = Shapes.CIRCLE,
-                 color: list[int, int, int, int] = (0, 0, 0, 255),
+                 color: list[int, int, int, int] = [0, 0, 0, 255],
                  pos: tuple[float, float] = (0.0, 0.0),
                  size: float = 1.0,
                  velocity: tuple[float, float] = (0.0, 0.0),
@@ -621,7 +643,8 @@ class Particle:
 button_1 = Button(image = pg.image.load(MENU_PATH + "Achievement.png").convert_alpha(), pos = (200, 200))
 factory = Factory()
 player = Player()
-collision_box = pg.Rect(0, 850*C.SCALE_X, 1920*C.SCALE_X, 100*C.SCALE_Y)
+collision_box = pg.Rect(0, 850*C.SCALE_Y, 1920*C.SCALE_X, 100*C.SCALE_Y)
+sell_box = SellBox(1284*C.SCALE_X, 831*C.SCALE_Y, 60*C.SCALE_X, 10*C.SCALE_Y)
 particles = []
 
 item_group = pg.sprite.Group()
@@ -640,24 +663,28 @@ while True:
     pg.display.update()
     player.update()
     if factory:
-        item_group.update(collision_box, player, item_group)
+        item_group.update(player, item_group, collision_box, sell_box)
         factory.update()
 
     # Draw -----------------------------------------------------------------------------------------------
-    screen.fill((0, 0, 0))
-    background.draw(screen)
+    SCREEN.fill((0, 0, 0))
+    background.draw(SCREEN)
     if factory:
         for item in item_group:
             item: Item
-            item.draw(screen, GUI["item_menu"])
-        factory.draw(screen)
-        button_1.draw(screen, player)
+            item.draw(SCREEN, GUI["item_menu"])
+        factory.draw(SCREEN)
+        button_1.draw(SCREEN, player)
         button_1.clicked(player, 128)
 
+    sell_box.update(particles)
+    
     for particle in particles:
         particle: Particle
-        particle.update_and_draw(screen = screen, particle_list = particles)
-    particles.append(Particle(color = [255,128,255,255], pos = player.pos, size = 3, velocity = (1,1), gravity = 1))
+        particle.update_and_draw(screen = SCREEN, particle_list = particles)
+
+    test_text = Text(text = f"{player.currency}", color = (255,128,255), pos = (500,500), font=  FONTS['S'], is_number_formatting = True)
+    test_text.draw()
 
     # Event Handling -------------------------------------------------------------------------------------
     for event in pg.event.get():
