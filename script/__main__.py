@@ -15,8 +15,10 @@ ASSETS_PATH = "./assets/"
 MENU_PATH = ASSETS_PATH + "./menu/"
 FONTS_PATH = ASSETS_PATH + "./fonts/"
 BACKGROUNDS_PATH = ASSETS_PATH + "./backgrounds/"
-FACTORY_JSON_PATH = "script/factory_items.json"
-STORAGE_JSON_PATH = "script/storage_items.json"
+
+FACTORY_JSON_PATH = "db/factory_items.json"
+STORAGE_JSON_PATH = "db/storage_items.json"
+PLAYER_JSON_PATH = "db/stats.json"
 
 GUI = {
     'item_menu': pg.transform.smoothscale_by(pg.image.load(MENU_PATH + "Item_Menu.png").convert_alpha(), C.SCALE_X*1.5),
@@ -113,11 +115,18 @@ class Background:
         screen.blit(self.image, self.rect.topleft)
 
 class Player(pg.sprite.Sprite):
-    def __init__(self) -> None:
+    def __init__(self, preexisting_stats_path: str = PLAYER_JSON_PATH) -> None:
         super().__init__()
         self.rect = pg.Rect(0, 0, 1, 1)
         self.pos = ()
         self.is_dragging = False
+        self.path = preexisting_stats_path
+
+        data: dict = self.deserialize()[0]
+
+        self.currency = data.get("currency")
+        if not self.currency:
+            self.currency = 0
 
     def update(self) -> None:
         self.rect.topleft = self.pos = pg.mouse.get_pos()
@@ -130,6 +139,18 @@ class Player(pg.sprite.Sprite):
 
         if not self.left_clicked and self.is_dragging:
             self.is_dragging = False
+
+    def serialize(self) -> dict:
+        return {
+            'currency': self.currency,
+        }
+    
+    def deserialize(self) -> dict:
+        try:
+            with open(f"{self.path}", "r") as f:
+                return json.load(f)
+        except:
+            return {}
 
 class Item(pg.sprite.Sprite):
     def __init__(self, asset_paths: dict, preexisting_item: dict | None = None) -> None:
@@ -598,8 +619,8 @@ class Particle:
         return value
 
 button_1 = Button(image = pg.image.load(MENU_PATH + "Achievement.png").convert_alpha(), pos = (200, 200))
-player = Player()
 factory = Factory()
+player = Player()
 collision_box = pg.Rect(0, 850*C.SCALE_X, 1920*C.SCALE_X, 100*C.SCALE_Y)
 particles = []
 
@@ -641,7 +662,7 @@ while True:
     # Event Handling -------------------------------------------------------------------------------------
     for event in pg.event.get():
         if event.type == pg.MOUSEBUTTONDOWN:
-            ...
+            player.currency += 25
 
         if event.type == pg.KEYDOWN:
             if event.key == pg.K_SPACE:
@@ -649,6 +670,8 @@ while True:
 
         if event.type == pg.QUIT:
             with open(FACTORY_JSON_PATH, 'w') as file:
-                    json.dump([item.serialize() for item in item_group], file, indent=1)
+                json.dump([item.serialize() for item in item_group], file, indent=1)
+            with open(PLAYER_JSON_PATH, 'w') as file:
+                json.dump([player.serialize()], file, indent=1)
             pg.quit()
             exit()
