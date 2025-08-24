@@ -545,14 +545,51 @@ class Particle:
                  shape: Shapes = Shapes.CIRCLE,
                  color: tuple [int, int, int] = (0, 0, 0),
                  pos: tuple[float, float] = (0.0, 0.0),
+                 size: float = 1.0,
                  velocity: tuple[float, float] = (0.0, 0.0),
-                 quantity: int = 1,
-                 gravity: float = 1) -> None: ...
+                 gravity: float = 1,
+                 timer: int = 3,
+                 is_randomized: tuple[bool, bool] = (True, True)) -> None:
+        
+        self.shape = shape
+        self.color = color
+        self.size = size
+        self.x, self.y = pos
+        self.x_velocity, self.y_velocity = velocity
+        self.has_random_x, self.has_random_y = is_randomized
+        self.gravity = gravity
+        self.max_timer = self.timer = timer*C.FPS
+        
+        if self.has_random_x:
+            rv = random.random()
+            self.x_velocity *= (rv**2 + rv) * (-1)**random.randint(1, 2)
+
+        if self.has_random_y:
+            rv = random.random()
+            self.y_velocity *= (rv**2 + rv) * (-1)**random.randint(1, 2)
+    
+    def update_and_draw(self, screen: pg.Surface, particle_list: list):
+        self.x += self.x_velocity
+        self.y += self.y_velocity + self.gravity
+
+        self.x_velocity -= self.x_velocity/self.max_timer
+        self.y_velocity -= self.y_velocity/self.max_timer
+
+        self.timer -= 1
+
+        if self.timer <= 0:
+            particle_list.remove(self)
+            del self
+        
+        match self.shape:
+            case Shapes.CIRCLE:
+                pg.draw.circle(screen, self.color, (self.x, self.y), self.size)
 
 button_1 = Button(image = pg.image.load(MENU_PATH + "Achievement.png").convert_alpha(), pos = (200, 200))
 mouse = Mouse()
 factory = Factory()
 collision_box = pg.Rect(0, 850*C.SCALE_X, 1920*C.SCALE_X, 100*C.SCALE_Y)
+particles = []
 
 item_group = pg.sprite.Group()
 if os.path.getsize(FACTORY_JSON_PATH) > 0:
@@ -564,7 +601,7 @@ background = Background(BACKGROUNDS[random.choice(list(BACKGROUNDS.keys()))])
 # Loop
 while True:
     pg.display.flip()
-    clock.tick(60)
+    clock.tick(C.FPS)
 
     # Update ---------------------------------------------------------------------------------------------
     pg.display.update()
@@ -578,10 +615,16 @@ while True:
     background.draw(screen)
     if factory:
         for item in item_group:
+            item: Item
             item.draw(screen, GUI["item_menu"])
         factory.draw(screen)
         button_1.draw(screen, mouse)
         button_1.clicked(mouse, 128)
+
+    for particle in particles:
+        particle: Particle
+        particle.update_and_draw(screen = screen, particle_list = particles)
+    #particles.append(Particle(color = (255,128,255), pos = mouse.pos, size = 3, velocity = (1,1), gravity = 1))
 
     # Event Handling -------------------------------------------------------------------------------------
     for event in pg.event.get():
