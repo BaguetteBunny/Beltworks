@@ -308,23 +308,39 @@ class Item(pg.sprite.Sprite):
                 bounce *= 0.5 * (self.weight + item.weight) / distance
                 bounce = max(bounce, 0.1)
 
-                self.x_velocity += nx * bounce
-                self.y_velocity += ny * bounce
-                item.x_velocity -= nx * bounce
-                item.y_velocity -= ny * bounce
-
+                if self.weight < item.weight:
+                    self.x_velocity += nx * bounce
+                    self.y_velocity += ny * bounce
+                elif self.weight > item.weight:
+                    self.x_velocity += nx * bounce
+                    self.y_velocity += ny * bounce
+                    item.x_velocity -= nx * bounce
+                    item.y_velocity -= ny * bounce
+                else:
+                    self.x_velocity += nx * bounce
+                    self.y_velocity += ny * bounce
+                    item.x_velocity -= nx * bounce
+                    item.y_velocity -= ny * bounce
+                
                 overlap = (self.rect.width + item.rect.width) / 2 - distance
                 separation = overlap / 2
-                self.x += nx * separation
-                self.y += ny * separation
-                item.x -= nx * separation
-                item.y -= ny * separation
+                if self.weight < item.weight:
+                    self.x += nx * overlap
+                    self.y += ny * overlap
+                elif self.weight > item.weight:
+                    item.x -= nx * overlap
+                    item.y -= ny * overlap
+                else:
+                    self.x += nx * separation
+                    self.y += ny * separation
+                    item.x -= nx * separation
+                    item.y -= ny * separation
 
                 self.angle += (self.x_velocity+self.y_velocity)/(1.5*self.weight)
                 self.angle %= 360
                 item.angle += (item.x_velocity+item.y_velocity)/(1.5*item.weight)
                 item.angle %= 360
-    
+
     def check_store_item(self, player: Player, group: pg.sprite.Group, storage_path: str) -> None:
         if self.dragged and player.right_clicked:
             if not os.path.exists(storage_path) or os.path.getsize(storage_path) == 0:
