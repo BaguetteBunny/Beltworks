@@ -112,7 +112,7 @@ class Background:
     def draw(self, screen: pg.Surface) -> None:
         screen.blit(self.image, self.rect.topleft)
 
-class Mouse(pg.sprite.Sprite):
+class Player(pg.sprite.Sprite):
     def __init__(self) -> None:
         super().__init__()
         self.rect = pg.Rect(0, 0, 1, 1)
@@ -186,16 +186,16 @@ class Item(pg.sprite.Sprite):
         }
         self.text['labeled_value'] = Text(text = f"Value: {self.text['value'].text} ¤", font = FONTS["S"], color = (255,255,255), pos = (self.x, self.y), is_centered = True)
 
-    def update(self, collision_box: pg.Rect, mouse: Mouse, group: pg.sprite.Group, storage_path: str = STORAGE_JSON_PATH) -> None:
+    def update(self, collision_box: pg.Rect, player: Player, group: pg.sprite.Group, storage_path: str = STORAGE_JSON_PATH) -> None:
         self.y += self.y_velocity
         self.x += self.x_velocity
         self.y_velocity += 0.5 * self.weight
         self.rect.topleft = (self.x, self.y)
         
-        self.check_collision(collision_box, mouse, group)
-        self.check_store_item(mouse, group, storage_path)
+        self.check_collision(collision_box, player, group)
+        self.check_store_item(player, group, storage_path)
 
-    def check_collision(self, collision_box: pg.Rect, mouse: Mouse, group: pg.sprite.Group) -> None:
+    def check_collision(self, collision_box: pg.Rect, player: Player, group: pg.sprite.Group) -> None:
         # Check for window collision
         if self.x < 0:
             self.x = 0
@@ -219,12 +219,12 @@ class Item(pg.sprite.Sprite):
             self.x_velocity = 4/self.weight
 
         # Check for mouse collision
-        if (self.rect.colliderect(mouse.rect) and mouse.left_clicked and not mouse.is_dragging) or (self.dragged and mouse.left_clicked):
+        if (self.rect.colliderect(player.rect) and player.left_clicked and not player.is_dragging) or (self.dragged and player.left_clicked):
             self.dragged = True
-            mouse.is_dragging = True
+            player.is_dragging = True
 
-            target_x = mouse.pos[0] - self.rect.width / 2
-            target_y = mouse.pos[1] - self.rect.height / 2
+            target_x = player.pos[0] - self.rect.width / 2
+            target_y = player.pos[1] - self.rect.height / 2
 
             # Spring Force
             spring_strength = 0.3
@@ -271,8 +271,8 @@ class Item(pg.sprite.Sprite):
                 item.angle += (item.x_velocity+item.y_velocity)/(1.5*item.weight)
                 item.angle %= 360
     
-    def check_store_item(self, mouse: Mouse, group: pg.sprite.Group, storage_path: str) -> None:
-        if self.dragged and mouse.right_clicked:
+    def check_store_item(self, player: Player, group: pg.sprite.Group, storage_path: str) -> None:
+        if self.dragged and player.right_clicked:
             if not os.path.exists(storage_path) or os.path.getsize(storage_path) == 0:
                 data = []
             else:
@@ -419,17 +419,17 @@ class Button:
         # Button Draw
         screen.blit(self.image, self.rect)
 
-    def clicked(self, mouse: Mouse, click_opacity: float | int = 0) -> bool:
+    def clicked(self, player: Player, click_opacity: float | int = 0) -> bool:
         current_time = time.time()
         
-        if self.left_click_enabled and mouse.left_clicked and self.rect.collidepoint(mouse.pos):
+        if self.left_click_enabled and player.left_clicked and self.rect.collidepoint(player.pos):
             if self.is_cooldownless(current_time, self.last_left_click_time):
                 self.last_left_click_time = current_time
                 if isinstance(click_opacity, (int, float)):
                     self.opacity = click_opacity
                 return True
 
-        if self.right_click_enabled and mouse.right_clicked and self.rect.collidepoint(mouse.pos):
+        if self.right_click_enabled and player.right_clicked and self.rect.collidepoint(player.pos):
             if self.is_cooldownless(current_time, self.last_right_click_time):
                 self.last_right_click_time = current_time
                 if isinstance(click_opacity, (int, float)):
@@ -598,7 +598,7 @@ class Particle:
         return value
 
 button_1 = Button(image = pg.image.load(MENU_PATH + "Achievement.png").convert_alpha(), pos = (200, 200))
-mouse = Mouse()
+player = Player()
 factory = Factory()
 collision_box = pg.Rect(0, 850*C.SCALE_X, 1920*C.SCALE_X, 100*C.SCALE_Y)
 particles = []
@@ -617,9 +617,9 @@ while True:
 
     # Update ---------------------------------------------------------------------------------------------
     pg.display.update()
-    mouse.update()
+    player.update()
     if factory:
-        item_group.update(collision_box, mouse, item_group)
+        item_group.update(collision_box, player, item_group)
         factory.update()
 
     # Draw -----------------------------------------------------------------------------------------------
@@ -630,13 +630,13 @@ while True:
             item: Item
             item.draw(screen, GUI["item_menu"])
         factory.draw(screen)
-        button_1.draw(screen, mouse)
-        button_1.clicked(mouse, 128)
+        button_1.draw(screen, player)
+        button_1.clicked(player, 128)
 
     for particle in particles:
         particle: Particle
         particle.update_and_draw(screen = screen, particle_list = particles)
-    particles.append(Particle(color = [255,128,255,255], pos = mouse.pos, size = 3, velocity = (1,1), gravity = 1))
+    particles.append(Particle(color = [255,128,255,255], pos = player.pos, size = 3, velocity = (1,1), gravity = 1))
 
     # Event Handling -------------------------------------------------------------------------------------
     for event in pg.event.get():
