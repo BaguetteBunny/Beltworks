@@ -142,6 +142,10 @@ class Player(pg.sprite.Sprite):
         if not self.currency:
             self.currency = 0
 
+        self.max_droprate = self.droprate = data.get("droprate")
+        if not self.max_droprate:
+            self.max_droprate = self.droprate = 120
+
     def update(self) -> None:
         self.rect.topleft = self.pos = pg.mouse.get_pos()
         buttons = pg.mouse.get_pressed()
@@ -153,6 +157,13 @@ class Player(pg.sprite.Sprite):
 
         if not self.left_clicked and self.is_dragging:
             self.is_dragging = False
+    
+    def do_drop_items(self) -> bool:
+        self.droprate -= 1
+        if self.droprate <= 0:
+            self.droprate = self.max_droprate
+            return True
+        return False
 
     def serialize(self) -> dict:
         return {
@@ -640,7 +651,10 @@ class Particle:
             value *= (rand_val**2 + rand_val) * (-1)**random.randint(1, 2)
         return value
 
-button_1 = Button(image = pg.image.load(MENU_PATH + "Achievement.png").convert_alpha(), pos = (200, 200))
+shop_button = Button(image = pg.image.load(MENU_PATH + "Shop.png").convert_alpha(), pos = (1605*C.SCALE_X, 350*C.SCALE_Y))
+factory_button = Button(image = pg.image.load(MENU_PATH + "Return.png").convert_alpha(), pos = (1738*C.SCALE_X, 350*C.SCALE_Y))
+storage_button = Button(image = pg.image.load(MENU_PATH + "Storage.png").convert_alpha(), pos = (1450*C.SCALE_X, 350*C.SCALE_Y))
+
 factory = Factory()
 player = Player()
 collision_box = pg.Rect(0, 850*C.SCALE_Y, 1920*C.SCALE_X, 100*C.SCALE_Y)
@@ -665,6 +679,8 @@ while True:
     if factory:
         item_group.update(player, item_group, collision_box, sell_box)
         factory.update()
+        if player.do_drop_items():
+            item_group.add(Item(ITEMS))
 
     # Draw -----------------------------------------------------------------------------------------------
     SCREEN.fill((0, 0, 0))
@@ -674,8 +690,13 @@ while True:
             item: Item
             item.draw(SCREEN, GUI["item_menu"])
         factory.draw(SCREEN)
-        button_1.draw(SCREEN, player)
-        button_1.clicked(player, 128)
+
+    storage_button.draw(SCREEN, player)
+    factory_button.draw(SCREEN, player)
+    shop_button.draw(SCREEN, player)
+    storage_button.clicked(player, 128)
+    factory_button.clicked(player, 128)
+    shop_button.clicked(player, 128)
 
     sell_box.update(particles)
     
@@ -683,17 +704,17 @@ while True:
         particle: Particle
         particle.update_and_draw(screen = SCREEN, particle_list = particles)
 
-    test_text = Text(text = f"{player.currency}", color = (255,128,255), pos = (500,500), font=  FONTS['S'], is_number_formatting = True)
-    test_text.draw()
+    currency_text = Text(text = f"{player.currency}", color = (255, 202, 0), pos = (1920*C.SCALE_X, 200*C.SCALE_Y), font=FONTS['XL'], is_centered = True, is_number_formatting = True)
+    currency_text.draw()
 
     # Event Handling -------------------------------------------------------------------------------------
     for event in pg.event.get():
         if event.type == pg.MOUSEBUTTONDOWN:
-            player.currency += 25
+            ...
 
         if event.type == pg.KEYDOWN:
             if event.key == pg.K_SPACE:
-                item_group.add(Item(ITEMS))
+                ...
 
         if event.type == pg.QUIT:
             with open(FACTORY_JSON_PATH, 'w') as file:
