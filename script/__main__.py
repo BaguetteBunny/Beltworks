@@ -341,10 +341,6 @@ class Item(pg.sprite.Sprite):
                 item.angle += (item.x_velocity+item.y_velocity)/(1.5*item.weight)
                 item.angle %= 360
 
-<<<<<<< HEAD
-=======
-    
->>>>>>> 2cce0c8d25e6a80a6d9ffff14eec8dd8db74aab9
     def check_store_item(self, player: Player, group: pg.sprite.Group, storage_path: str) -> None:
         if self.dragged and player.right_clicked:
             if not os.path.exists(storage_path) or os.path.getsize(storage_path) == 0:
