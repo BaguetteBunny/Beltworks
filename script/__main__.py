@@ -172,7 +172,7 @@ class Player(pg.sprite.Sprite):
     def serialize(self) -> dict:
         return {
             'currency': self.currency,
-            'droprate': self.droprate,
+            'droprate': self.max_droprate,
             'bg': self.current_background,
         }
     
