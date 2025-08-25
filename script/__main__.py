@@ -314,33 +314,17 @@ class Item(pg.sprite.Sprite):
                 bounce *= 0.5 * (self.weight + item.weight) / distance
                 bounce = max(bounce, 0.1)
 
-                if self.weight < item.weight:
-                    self.x_velocity += nx * bounce
-                    self.y_velocity += ny * bounce
-                elif self.weight > item.weight:
-                    self.x_velocity += nx * bounce
-                    self.y_velocity += ny * bounce
-                    item.x_velocity -= nx * bounce
-                    item.y_velocity -= ny * bounce
-                else:
-                    self.x_velocity += nx * bounce
-                    self.y_velocity += ny * bounce
-                    item.x_velocity -= nx * bounce
-                    item.y_velocity -= ny * bounce
-                
+                self.x_velocity += nx * bounce
+                self.y_velocity += ny * bounce
+                item.x_velocity -= nx * bounce
+                item.y_velocity -= ny * bounce
+
                 overlap = (self.rect.width + item.rect.width) / 2 - distance
                 separation = overlap / 2
-                if self.weight < item.weight:
-                    self.x += nx * overlap
-                    self.y += ny * overlap
-                elif self.weight > item.weight:
-                    item.x -= nx * overlap
-                    item.y -= ny * overlap
-                else:
-                    self.x += nx * separation
-                    self.y += ny * separation
-                    item.x -= nx * separation
-                    item.y -= ny * separation
+                self.x += nx * separation
+                self.y += ny * separation
+                item.x -= nx * separation
+                item.y -= ny * separation
 
                 self.angle += (self.x_velocity+self.y_velocity)/(1.5*self.weight)
                 self.angle %= 360
