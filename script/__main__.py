@@ -55,13 +55,13 @@ FONTS = {
     "6XL": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 100),
 }
 BACKGROUNDS = {
-    "ocean_1": [pg.transform.smoothscale_by(pg.image.load(BACKGROUNDS_PATH + "ocean_1.png").convert_alpha(), C.SCALE_X), (250,250)],
-    "island_1": [pg.transform.smoothscale_by(pg.image.load(BACKGROUNDS_PATH + "island_1.png").convert_alpha(), C.SCALE_X), (250,250)],
-    "island_2": [pg.transform.smoothscale_by(pg.image.load(BACKGROUNDS_PATH + "island_2.png").convert_alpha(), C.SCALE_X), (250,250)],
-    "island_3": [pg.transform.smoothscale_by(pg.image.load(BACKGROUNDS_PATH + "island_3.png").convert_alpha(), C.SCALE_X), (250,250)],
-    "cloud_1": [pg.transform.smoothscale_by(pg.image.load(BACKGROUNDS_PATH + "cloud_1.png").convert_alpha(), C.SCALE_X), (250,250)],
-    "cloud_2": [pg.transform.smoothscale_by(pg.image.load(BACKGROUNDS_PATH + "cloud_2.png").convert_alpha(), C.SCALE_X), (250,250)],
-    "cloud_3": [pg.transform.smoothscale_by(pg.image.load(BACKGROUNDS_PATH + "cloud_3.png").convert_alpha(), C.SCALE_X), (250,250)],
+    "azur": [pg.transform.smoothscale_by(pg.image.load(BACKGROUNDS_PATH + "azur.png").convert_alpha(), C.SCALE_X), (250,250)],
+    "brewing_storm": [pg.transform.smoothscale_by(pg.image.load(BACKGROUNDS_PATH + "brewing_storm.png").convert_alpha(), C.SCALE_X), (250,250)],
+    "default": [pg.transform.smoothscale_by(pg.image.load(BACKGROUNDS_PATH + "default.png").convert_alpha(), C.SCALE_X), (250,250)],
+    "night_sea": [pg.transform.smoothscale_by(pg.image.load(BACKGROUNDS_PATH + "night_sea.png").convert_alpha(), C.SCALE_X), (250,250)],
+    "rocky": [pg.transform.smoothscale_by(pg.image.load(BACKGROUNDS_PATH + "rocky.png").convert_alpha(), C.SCALE_X), (250,250)],
+    "shore": [pg.transform.smoothscale_by(pg.image.load(BACKGROUNDS_PATH + "shore.png").convert_alpha(), C.SCALE_X), (250,250)],
+    "sunset": [pg.transform.smoothscale_by(pg.image.load(BACKGROUNDS_PATH + "sunset.png").convert_alpha(), C.SCALE_X), (250,250)],
 }
 
 class RainbowConfig:
@@ -144,7 +144,11 @@ class Player(pg.sprite.Sprite):
 
         self.max_droprate = self.droprate = data.get("droprate")
         if not self.max_droprate:
-            self.max_droprate = self.droprate = 120
+            self.max_droprate = self.droprate = 300
+
+        self.current_background = data.get("bg")
+        if not self.current_background:
+            self.current_background = "default"
 
     def update(self) -> None:
         self.rect.topleft = self.pos = pg.mouse.get_pos()
@@ -168,6 +172,8 @@ class Player(pg.sprite.Sprite):
     def serialize(self) -> dict:
         return {
             'currency': self.currency,
+            'droprate': self.droprate,
+            'bg': self.current_background,
         }
     
     def deserialize(self) -> dict:
@@ -682,7 +688,7 @@ if os.path.getsize(FACTORY_JSON_PATH) > 0:
     for item in json.loads(open(FACTORY_JSON_PATH).read()):
         item_group.add(Item(ITEMS, item))
 
-background = Background(BACKGROUNDS[random.choice(list(BACKGROUNDS.keys()))])
+background = Background(BACKGROUNDS[player.current_background])
 
 # Loop
 while True:
