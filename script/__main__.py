@@ -436,6 +436,7 @@ class StorageItem(pg.sprite.Sprite):
 
         self.old_mouse_pos = ()
         self.x, self.y = pos
+        self.random_y_offset = math.pi * random.random() * (-1)**(random.randint(1,2))
 
         # Image
         self.image = pg.image.load(self.path).convert_alpha()
@@ -454,6 +455,9 @@ class StorageItem(pg.sprite.Sprite):
         self.text['labeled_value'] = Text(text = f"Value: {self.text['value'].text} ¤", font = FONTS["S"], color = (255,255,255), pos = (self.x, self.y), is_centered = True)
     
     def draw(self, screen: pg.Surface):
+        self.random_y_offset = (self.random_y_offset+0.08) % (2*math.pi)
+        new_y = self.y + 2*math.sin(self.random_y_offset)
+        self.rect = self.image.get_rect(topleft=(self.x, new_y))
         screen.blit(self.image, self.rect)
 
     def update_and_draw_gui(self, screen: pg.Surface, player: Player, stored_item_list: list, gui: pg.Surface):
