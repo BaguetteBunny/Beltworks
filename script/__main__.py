@@ -475,7 +475,7 @@ class StorageItem(pg.sprite.Sprite):
 
             if player.right_clicked:
                 player.currency += self.value
-                stored_item_list.pop(self)
+                stored_item_list.remove(self)
                 del self
 
     def __str__(self) -> str:
@@ -766,7 +766,7 @@ while True:
 
     elif player.state == State.ITEM_STORAGE: ...
 
-    if item_storage_button.clicked(player, 128):
+    if item_storage_button.clicked(player, 128) and not player.state == State.ITEM_STORAGE:
         player.state = State.ITEM_STORAGE
         if os.path.getsize(STORAGE_JSON_PATH) > 0:
             i, j, x, y = 0, 0, 0, 0
