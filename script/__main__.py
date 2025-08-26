@@ -62,9 +62,13 @@ class RainbowConfig:
         self.fixed_lightness = fixed_lightness
 
 class Shapes(enum.Enum):
-    CIRCLE = "circle"
-    SQUARE = "square"
-    TRIANGLE = "triangle"
+    CIRCLE = 0
+    SQUARE = 1
+    TRIANGLE = 2
+
+class State(enum.Enum):
+    FACTORY = 0
+    ITEM_STORAGE = 1
 
 class SellBox(pg.Rect):
     def __init__(self, left: float, top: float, width: float, height: float):
@@ -80,7 +84,7 @@ class SellBox(pg.Rect):
             particle_list.append(Particle(color = [255,254,181,255], pos = (self.left + i, self.top + self.height), size = 1, velocity = (0.5,-2), gravity = 0, timer = rv, is_randomized = (True, False)))
 
 class Factory:
-    def __init__(self, screen: pg.Surface = SCREEN) -> None:
+    def __init__(self, screen: pg.Surface = SCREEN, menu_path: str = MENU_PATH) -> None:
         self.background = pg.Surface(screen.get_size())
         self.background.fill((0, 0, 0))
         self.background.set_alpha(0)
@@ -88,7 +92,7 @@ class Factory:
 
         self.animation_cooldown = 0
         
-        self.spritesheet = pg.image.load("assets/menu/Factory.png").convert_alpha()
+        self.spritesheet = pg.image.load(menu_path + "Factory.png").convert_alpha()
         self.animation_list = []
         for frame in range(4):
             current_frame = pg.transform.smoothscale_by(self.spritesheet.subsurface(frame*1920, 0, 1920, 1080), C.SCALE_X)
@@ -120,12 +124,13 @@ class Background:
         screen.blit(self.image, self.rect.topleft)
 
 class Player(pg.sprite.Sprite):
-    def __init__(self, preexisting_stats_path: str = PLAYER_JSON_PATH) -> None:
+    def __init__(self, preexisting_stats_path: str = PLAYER_JSON_PATH, menu_state: State = State.FACTORY) -> None:
         super().__init__()
         self.rect = pg.Rect(0, 0, 1, 1)
         self.pos = ()
         self.is_dragging = False
         self.path = preexisting_stats_path
+        self.state = menu_state
 
         data: dict = self.deserialize()[0]
 
@@ -229,7 +234,13 @@ class Item(pg.sprite.Sprite):
         }
         self.text['labeled_value'] = Text(text = f"Value: {self.text['value'].text} ¤", font = FONTS["S"], color = (255,255,255), pos = (self.x, self.y), is_centered = True)
 
-    def update(self, player: Player, group: pg.sprite.Group, collision_box: pg.Rect, sell_box: pg.Rect, storage_path: str = STORAGE_JSON_PATH) -> None:
+    def update(self,
+               player: Player,
+               group: pg.sprite.Group,
+               collision_box: pg.Rect,
+               sell_box: pg.Rect,
+               storage_path: str = STORAGE_JSON_PATH) -> None:
+
         self.y += self.y_velocity
         self.x += self.x_velocity
         self.y_velocity += 0.5 * self.weight
@@ -403,6 +414,65 @@ class Item(pg.sprite.Sprite):
             'weight': self.weight,
             'mutations': self.mutations,
         }
+
+    def __str__(self) -> str:
+        return f"Item: {self.name}, Rarity: {self.rarity['label'].title()}, Durability: {self.durability['label'].title()}, Weight: {self.weight}, Mutations: {self.mutations}"
+
+class StorageItem(pg.sprite.Sprite):
+    def __init__(self, stored_dict: dict, pos: tuple[float | int, float | int]) -> None:
+        pg.sprite.Sprite.__init__(self)
+
+        self.path = stored_dict['path']
+        self.name = stored_dict['name']
+        self.rarity = stored_dict['rarity']
+        self.durability = stored_dict['durability']
+        self.weight = stored_dict['weight']
+        self.mutations = stored_dict['mutations']
+            
+        if not isinstance(self.rarity['color'], list):
+            self.rarity['color'] = RainbowConfig(True, self.rarity['color']['hue_step'], self.rarity['color']['fixed_lightness'])
+        if not isinstance(self.durability['color'], list):
+            self.durability['color'] = RainbowConfig(True, self.durability['color']['hue_step'], self.durability['color']['fixed_lightness'])
+
+        self.old_mouse_pos = ()
+        self.x, self.y = pos
+
+        # Image
+        self.image = pg.image.load(self.path).convert_alpha()
+        self.image = pg.transform.smoothscale_by(self.image, C.SCALE_X*0.75)
+        self.rect = self.image.get_rect(topleft=(self.x, self.y))
+
+        self.value = self.rarity["value"] * self.durability["multiplier"]
+
+        # Text
+        self.text = {
+            'name': Text(text = f"{self.name}", font = FONTS["XS"], color = (255,255,255), pos = (self.x, self.y), is_centered = True, is_bold = True),
+            'rarity' : Text(text = f"Rarity: {self.rarity['label'].title()}", font = FONTS["S"], color = self.rarity['color'], pos = (self.x, self.y), is_centered = True),
+            'durability' : Text(text = f"Durability: {self.durability['label'].title()}", font = FONTS["S"], color = self.durability['color'], pos = (self.x, self.y), is_centered = True),
+            'value' : Text(text = f"{self.value}", is_number_formatting = True)
+        }
+        self.text['labeled_value'] = Text(text = f"Value: {self.text['value'].text} ¤", font = FONTS["S"], color = (255,255,255), pos = (self.x, self.y), is_centered = True)
+    
+    def draw(self, screen: pg.Surface):
+        screen.blit(self.image, self.rect)
+
+    def update_and_draw_gui(self, screen: pg.Surface, player: Player, stored_item_list: list, gui: pg.Surface):
+        if player.left_clicked and self.rect.colliderect(player.rect):
+            centerx = self.rect.centerx - gui.get_width() // 2
+            centery = self.rect.centery - gui.get_height() - 20*C.SCALE_Y
+            if self.y == 304 * C.SCALE_Y:
+                centery += 450 * C.SCALE_Y
+            screen.blit(gui, (centerx, centery))
+
+            self.text['name'].draw(screen, new_pos = (self.rect.centerx, centery+389*C.SCALE_Y))
+            self.text['rarity'].draw(screen, new_pos = (self.rect.centerx, centery+120*C.SCALE_Y))
+            self.text['durability'].draw(screen, new_pos = (self.rect.centerx, centery+145*C.SCALE_Y))
+            self.text['labeled_value'].draw(screen, new_pos = (self.rect.centerx, centery+170*C.SCALE_Y))
+
+            if player.right_clicked:
+                player.currency += self.value
+                stored_item_list.pop(self)
+                del self
 
     def __str__(self) -> str:
         return f"Item: {self.name}, Rarity: {self.rarity['label'].title()}, Durability: {self.durability['label'].title()}, Weight: {self.weight}, Mutations: {self.mutations}"
@@ -648,13 +718,21 @@ class Particle:
             value *= (rand_val**2 + rand_val) * (-1)**random.randint(1, 2)
         return value
 
+class Storage:
+    def __init__(self, menu_path: str = MENU_PATH):
+        self.image = pg.transform.scale_by(pg.image.load(menu_path + "Storage.png").convert_alpha(), C.SCALE_X)
+
+    def draw(self, screen: pg.Surface = SCREEN):
+        screen.blit(self.image, (0,0))
+
 player = Player()
 factory = Factory()
 factory_background = Background(BACKGROUNDS[player.current_background])
+item_storage = Storage()
 
 shop_button = Button(image = pg.image.load(BUTTON_PATH + "Shop.png").convert_alpha(), pos = (1605*C.SCALE_X, 350*C.SCALE_Y))
 factory_button = Button(image = pg.image.load(BUTTON_PATH + "Return.png").convert_alpha(), pos = (1738*C.SCALE_X, 350*C.SCALE_Y))
-storage_button = Button(image = pg.image.load(BUTTON_PATH + "Storage.png").convert_alpha(), pos = (1450*C.SCALE_X, 350*C.SCALE_Y))
+item_storage_button = Button(image = pg.image.load(BUTTON_PATH + "Storage.png").convert_alpha(), pos = (1450*C.SCALE_X, 350*C.SCALE_Y))
 
 collision_box = pg.Rect(0, 850*C.SCALE_Y, 1920*C.SCALE_X, 100*C.SCALE_Y)
 sell_box = SellBox(1284*C.SCALE_X, 831*C.SCALE_Y, 60*C.SCALE_X, 10*C.SCALE_Y)
@@ -662,6 +740,7 @@ sell_box = SellBox(1284*C.SCALE_X, 831*C.SCALE_Y, 60*C.SCALE_X, 10*C.SCALE_Y)
 particles = []
 
 item_group = pg.sprite.Group()
+stored_item_group = pg.sprite.Group()
 if os.path.getsize(FACTORY_JSON_PATH) > 0:
     for item in json.loads(open(FACTORY_JSON_PATH).read()):
         item_group.add(Item(ITEMS, item))
@@ -674,36 +753,58 @@ while True:
     # Update ---------------------------------------------------------------------------------------------
     pg.display.update()
     player.update()
-    if factory:
+    if player.state == State.FACTORY:
         item_group.update(player, item_group, collision_box, sell_box)
         factory.update()
+        sell_box.update(particles)
         if player.do_drop_items():
             item_group.add(Item(ITEMS))
+
+    elif player.state == State.ITEM_STORAGE: ...
+
+    if item_storage_button.clicked(player, 128):
+        player.state = State.ITEM_STORAGE
+        if os.path.getsize(STORAGE_JSON_PATH) > 0:
+            i, j, x, y = 0, 0, 0, 0
+            for item in json.loads(open(STORAGE_JSON_PATH).read()):
+                x = 224 + 96 * i
+                y = 304 + 96 * j
+                stored_item_group.add(StorageItem(stored_dict = item, pos = (x * C.SCALE_X, y * C.SCALE_Y)))
+                i = (i + 1) % 10
+                if not i:
+                    j += 1
+            del i, j, x, y
+
+    elif factory_button.clicked(player, 128):
+        player.state = State.FACTORY
+    #shop_button.clicked(player, 128)
 
     # Draw -----------------------------------------------------------------------------------------------
     SCREEN.fill((0, 0, 0))
     factory_background.draw(SCREEN)
-    if factory:
-        for item in item_group:
-            item: Item
-            item.draw(SCREEN, GUI["item_menu"])
-        factory.draw(SCREEN)
+    for item in item_group:
+        item: Item
+        item.draw(SCREEN, GUI["item_menu"])
+    factory.draw(SCREEN)
+    currency_text = Text(text = f"{player.currency}", color = (255, 202, 0), pos = (1920*C.SCALE_X, 200*C.SCALE_Y), font=FONTS['XL'], is_centered = True, is_number_formatting = True)
+    currency_text.draw()
 
-    storage_button.draw(SCREEN, player)
+    item_storage_button.draw(SCREEN, player)
     factory_button.draw(SCREEN, player)
     shop_button.draw(SCREEN, player)
-    storage_button.clicked(player, 128)
-    factory_button.clicked(player, 128)
-    shop_button.clicked(player, 128)
 
-    sell_box.update(particles)
-    
+    if player.state == State.ITEM_STORAGE:
+        item_storage.draw(screen = SCREEN)
+        for item in stored_item_group:
+            item: StorageItem
+            item.draw(screen = SCREEN)
+        for item in stored_item_group:
+            item: StorageItem
+            item.update_and_draw_gui(screen = SCREEN, player = player, stored_item_list = stored_item_group, gui = GUI["item_menu"])
+
     for particle in particles:
         particle: Particle
         particle.update_and_draw(screen = SCREEN, particle_list = particles)
-
-    currency_text = Text(text = f"{player.currency}", color = (255, 202, 0), pos = (1920*C.SCALE_X, 200*C.SCALE_Y), font=FONTS['XL'], is_centered = True, is_number_formatting = True)
-    currency_text.draw()
 
     # Event Handling -------------------------------------------------------------------------------------
     for event in pg.event.get():
