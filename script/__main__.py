@@ -13,6 +13,7 @@ pg.display.set_caption("Testing")
 # Assets
 ASSETS_PATH = "./assets/"
 MENU_PATH = ASSETS_PATH + "./menu/"
+BUTTON_PATH = MENU_PATH + "button/"
 FONTS_PATH = ASSETS_PATH + "./fonts/"
 BACKGROUNDS_PATH = ASSETS_PATH + "./backgrounds/"
 
@@ -651,9 +652,9 @@ player = Player()
 factory = Factory()
 factory_background = Background(BACKGROUNDS[player.current_background])
 
-shop_button = Button(image = pg.image.load(MENU_PATH + "Shop.png").convert_alpha(), pos = (1605*C.SCALE_X, 350*C.SCALE_Y))
-factory_button = Button(image = pg.image.load(MENU_PATH + "Return.png").convert_alpha(), pos = (1738*C.SCALE_X, 350*C.SCALE_Y))
-storage_button = Button(image = pg.image.load(MENU_PATH + "Storage.png").convert_alpha(), pos = (1450*C.SCALE_X, 350*C.SCALE_Y))
+shop_button = Button(image = pg.image.load(BUTTON_PATH + "Shop.png").convert_alpha(), pos = (1605*C.SCALE_X, 350*C.SCALE_Y))
+factory_button = Button(image = pg.image.load(BUTTON_PATH + "Return.png").convert_alpha(), pos = (1738*C.SCALE_X, 350*C.SCALE_Y))
+storage_button = Button(image = pg.image.load(BUTTON_PATH + "Storage.png").convert_alpha(), pos = (1450*C.SCALE_X, 350*C.SCALE_Y))
 
 collision_box = pg.Rect(0, 850*C.SCALE_Y, 1920*C.SCALE_X, 100*C.SCALE_Y)
 sell_box = SellBox(1284*C.SCALE_X, 831*C.SCALE_Y, 60*C.SCALE_X, 10*C.SCALE_Y)
