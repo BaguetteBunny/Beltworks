@@ -20,7 +20,7 @@ BACKGROUNDS_PATH = ASSETS_PATH + "./backgrounds/"
 DB_PATH = "db/"
 FACTORY_JSON_PATH = DB_PATH + "factory_items.json"
 STORAGE_JSON_PATH = DB_PATH + "storage_items.json"
-PLAYER_JSON_PATH = DB_PATH +"stats.json"
+PLAYER_JSON_PATH = DB_PATH + "stats.json"
 
 GUI = {
     'item_menu': pg.transform.smoothscale_by(pg.image.load(MENU_PATH + "Item_Menu.png").convert_alpha(), C.SCALE_X*1.5),
@@ -204,7 +204,7 @@ class Item(pg.sprite.Sprite):
             self.path = "assets/items/" + item_picked
             self.name = item_picked.replace(".png", "").replace("_", " ").title()
             self.durability = self.select_durability(random.gauss(50, 15))
-            self.weight = (1+random.random())*random.randint(1,2)
+            self.weight = 2.5
             self.mutations = []
             
             # Motion
