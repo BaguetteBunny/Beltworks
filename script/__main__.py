@@ -435,7 +435,9 @@ class StorageItem(pg.sprite.Sprite):
             self.durability['color'] = RainbowConfig(True, self.durability['color']['hue_step'], self.durability['color']['fixed_lightness'])
 
         self.old_mouse_pos = ()
-        self.x, self.y = pos
+        self.og_x, self.og_y = pos
+        self.x = pos[0] * C.SCALE_X
+        self.y = pos[1] * C.SCALE_Y
         self.random_y_offset = math.pi * random.random() * (-1)**(random.randint(1,2))
 
         # Image
@@ -460,11 +462,11 @@ class StorageItem(pg.sprite.Sprite):
         self.rect = self.image.get_rect(topleft=(self.x, new_y))
         screen.blit(self.image, self.rect)
 
-    def update_and_draw_gui(self, screen: pg.Surface, player: Player, stored_item_list: list, gui: pg.Surface):
-        if player.left_clicked and self.rect.colliderect(player.rect):
+    def update_and_draw_gui(self, screen: pg.Surface, player: Player, stored_item_list: list, gui: pg.Surface, json_path: str = STORAGE_JSON_PATH):
+        if self.rect.colliderect(player.rect):
             centerx = self.rect.centerx - gui.get_width() // 2
             centery = self.rect.centery - gui.get_height() - 20*C.SCALE_Y
-            if self.y == 304 * C.SCALE_Y:
+            if self.og_y == 304:
                 centery += 450 * C.SCALE_Y
             screen.blit(gui, (centerx, centery))
 
@@ -474,6 +476,13 @@ class StorageItem(pg.sprite.Sprite):
             self.text['labeled_value'].draw(screen, new_pos = (self.rect.centerx, centery+170*C.SCALE_Y))
 
             if player.right_clicked:
+                with open(json_path, "r") as f:
+                    data = json.load(f)
+                index_to_remove = int((10 * (self.og_y - 304) + (self.og_x - 224)) / 96)
+                del data[index_to_remove]
+                with open(json_path, "w") as f:
+                    json.dump(data, f, indent=1)
+
                 player.currency += self.value
                 stored_item_list.remove(self)
                 del self
@@ -767,13 +776,14 @@ while True:
     elif player.state == State.ITEM_STORAGE: ...
 
     if item_storage_button.clicked(player, 128) and not player.state == State.ITEM_STORAGE:
+        stored_item_group = pg.sprite.Group()
         player.state = State.ITEM_STORAGE
         if os.path.getsize(STORAGE_JSON_PATH) > 0:
             i, j, x, y = 0, 0, 0, 0
             for item in json.loads(open(STORAGE_JSON_PATH).read()):
                 x = 224 + 96 * i
                 y = 304 + 96 * j
-                stored_item_group.add(StorageItem(stored_dict = item, pos = (x * C.SCALE_X, y * C.SCALE_Y)))
+                stored_item_group.add(StorageItem(stored_dict = item, pos = (x, y)))
                 i = (i + 1) % 10
                 if not i:
                     j += 1
