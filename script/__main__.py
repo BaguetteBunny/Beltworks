@@ -24,19 +24,9 @@ PLAYER_JSON_PATH = DB_PATH +"stats.json"
 GUI = {
     'item_menu': pg.transform.smoothscale_by(pg.image.load(MENU_PATH + "Item_Menu.png").convert_alpha(), C.SCALE_X*1.5),
 }
-ITEMS = {
-    "common": [],
-    "uncommon": [],
-    "rare": [],
-    "epic": [],
-    "legendary": [],
-    "fabled": [],
-    "mythic": [],
-    "supreme": [],
-}
 
-ITEMS["common"] = [
-    item for item in os.listdir(ASSETS_PATH + "items/common")
+ITEMS = [
+    item for item in os.listdir(ASSETS_PATH + "items")
     if item.endswith(".png") and not item.startswith("z")
 ]
 FONTS = {
@@ -184,7 +174,7 @@ class Player(pg.sprite.Sprite):
             return {}
 
 class Item(pg.sprite.Sprite):
-    def __init__(self, asset_paths: dict, preexisting_item: dict | None = None) -> None:
+    def __init__(self, item_list: list, preexisting_item: dict | None = None) -> None:
         pg.sprite.Sprite.__init__(self)
 
         if preexisting_item:
@@ -203,9 +193,9 @@ class Item(pg.sprite.Sprite):
             if not isinstance(self.durability['color'], list):
                 self.durability['color'] = RainbowConfig(True, self.durability['color']['hue_step'], self.durability['color']['fixed_lightness'])
         else:
+            item_picked = random.choice(item_list)
             self.rarity = self.select_rarity(random.randint(1,1_000_000_000))
-            item_picked = random.choice(asset_paths[self.rarity['label']])
-            self.path = "assets/items/" + self.rarity['label'] + "/" + item_picked
+            self.path = "assets/items/" + item_picked
             self.name = item_picked.replace(".png", "").replace("_", " ").title()
             self.durability = self.select_durability(random.gauss(50, 15))
             self.weight = (1+random.random())*random.randint(1,2)
@@ -657,22 +647,23 @@ class Particle:
             value *= (rand_val**2 + rand_val) * (-1)**random.randint(1, 2)
         return value
 
+player = Player()
+factory = Factory()
+factory_background = Background(BACKGROUNDS[player.current_background])
+
 shop_button = Button(image = pg.image.load(MENU_PATH + "Shop.png").convert_alpha(), pos = (1605*C.SCALE_X, 350*C.SCALE_Y))
 factory_button = Button(image = pg.image.load(MENU_PATH + "Return.png").convert_alpha(), pos = (1738*C.SCALE_X, 350*C.SCALE_Y))
 storage_button = Button(image = pg.image.load(MENU_PATH + "Storage.png").convert_alpha(), pos = (1450*C.SCALE_X, 350*C.SCALE_Y))
 
-factory = Factory()
-player = Player()
 collision_box = pg.Rect(0, 850*C.SCALE_Y, 1920*C.SCALE_X, 100*C.SCALE_Y)
 sell_box = SellBox(1284*C.SCALE_X, 831*C.SCALE_Y, 60*C.SCALE_X, 10*C.SCALE_Y)
+
 particles = []
 
 item_group = pg.sprite.Group()
 if os.path.getsize(FACTORY_JSON_PATH) > 0:
     for item in json.loads(open(FACTORY_JSON_PATH).read()):
         item_group.add(Item(ITEMS, item))
-
-background = Background(BACKGROUNDS[player.current_background])
 
 # Loop
 while True:
@@ -690,7 +681,7 @@ while True:
 
     # Draw -----------------------------------------------------------------------------------------------
     SCREEN.fill((0, 0, 0))
-    background.draw(SCREEN)
+    factory_background.draw(SCREEN)
     if factory:
         for item in item_group:
             item: Item
