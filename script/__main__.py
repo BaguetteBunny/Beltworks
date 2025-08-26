@@ -348,12 +348,12 @@ class Item(pg.sprite.Sprite):
             group.remove(self)
             del self
 
-    def draw(self, screen: pg.Surface, gui: pg.Surface):
+    def draw(self, screen: pg.Surface, player: Player, gui: pg.Surface):
         rotated_image = pg.transform.rotate(self.image, self.angle)
         new_rect = rotated_image.get_rect(center=self.rect.center)
         screen.blit(rotated_image, new_rect.topleft)
 
-        if self.dragged:
+        if self.rect.colliderect(player.rect):
             centerx = self.rect.centerx - gui.get_width() // 2
             centery = self.rect.centery - gui.get_height() - 20*C.SCALE_Y
             screen.blit(gui, (centerx, centery))
@@ -798,7 +798,7 @@ while True:
     factory_background.draw(SCREEN)
     for item in item_group:
         item: Item
-        item.draw(SCREEN, GUI["item_menu"])
+        item.draw(SCREEN, player, GUI["item_menu"])
     factory.draw(SCREEN)
     currency_text = Text(text = f"{player.currency}", color = (255, 202, 0), pos = (1920*C.SCALE_X, 200*C.SCALE_Y), font=FONTS['XL'], is_centered = True, is_number_formatting = True)
     currency_text.draw()
