@@ -1,14 +1,26 @@
 import pygame as pg
 import constants as C
 import random, math, colorsys, os, json, time, enum
+from pathlib import Path
 
-# Text
 pg.init()
 clock = pg.time.Clock()
 
 largest_size = pg.display.list_modes()[0]
 SCREEN = pg.display.set_mode(largest_size, pg.FULLSCREEN | pg.HWACCEL | pg.HWSURFACE)
 pg.display.set_caption("Testing")
+
+# Functions
+def build_image_dict(root_folder: str) -> dict:
+    root = Path(root_folder)
+    result = {}
+
+    for subfolder in root.iterdir():
+        if subfolder.is_dir():
+            images = [str(file) for file in subfolder.iterdir()
+                      if file.is_file() and file.suffix.lower() in {".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"}]
+            result[subfolder.name] = images
+    return result
 
 # Assets
 ASSETS_PATH = "./assets/"
@@ -26,10 +38,7 @@ GUI = {
     'item_menu': pg.transform.smoothscale_by(pg.image.load(MENU_PATH + "Item_Menu.png").convert_alpha(), C.SCALE_X*1.5),
 }
 
-ITEMS = [
-    item for item in os.listdir(ASSETS_PATH + "items")
-    if item.endswith(".png") and not item.startswith("z")
-]
+ITEMS = build_image_dict(ASSETS_PATH + "items")
 FONTS = {
     "4XS": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 2),
     "3XS": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 5),
@@ -180,7 +189,7 @@ class Player(pg.sprite.Sprite):
             return {}
 
 class Item(pg.sprite.Sprite):
-    def __init__(self, item_list: list, preexisting_item: dict | None = None) -> None:
+    def __init__(self, item_dict: dict, preexisting_item: dict | None = None) -> None:
         pg.sprite.Sprite.__init__(self)
 
         if preexisting_item:
@@ -199,11 +208,13 @@ class Item(pg.sprite.Sprite):
             if not isinstance(self.durability['color'], list):
                 self.durability['color'] = RainbowConfig(True, self.durability['color']['hue_step'], self.durability['color']['fixed_lightness'])
         else:
-            item_picked = random.choice(item_list)
-            self.rarity = self.select_rarity(random.randint(1,1_000_000_000))
-            self.path = "assets/items/" + item_picked
-            self.name = item_picked.replace(".png", "").replace("_", " ").title()
+            category_picked = random.choice([k for k, v in item_dict.items() if v])
+            self.path: str = random.choice(item_dict[category_picked])
+            pure_path = Path(self.path)
+            self.category = pure_path.parts[2]
+            self.name = pure_path.parts[3].replace(".png", "").replace("_", " ").title()
             self.durability = self.select_durability(random.gauss(50, 15))
+            self.rarity = self.select_rarity(random.randint(1,1_000_000_000))
             self.weight = 2.5
             self.mutations = []
             
