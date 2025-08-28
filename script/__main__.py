@@ -208,7 +208,7 @@ class Item(pg.sprite.Sprite):
             if not isinstance(self.durability['color'], list):
                 self.durability['color'] = RainbowConfig(True, self.durability['color']['hue_step'], self.durability['color']['fixed_lightness'])
         else:
-            category_picked = random.choice([k for k, v in item_dict.items() if v])
+            category_picked = random.choice(self.select_category(random.randint(1,100_000_000)))
             self.path: str = random.choice(item_dict[category_picked])
             pure_path = Path(self.path)
             self.category = pure_path.parts[2]
@@ -376,8 +376,8 @@ class Item(pg.sprite.Sprite):
 
     def select_rarity(self, selector: float) -> dict:
         if selector == 1: return {'label': 'supreme', 'value': 1000000000, 'color': RainbowConfig(True)} # 1 in 1B
-        elif selector <= 100: return {'label': 'mythic', 'value': 100000000, 'color': (212, 76, 115)} # 1 in 10M
-        elif selector <= 1_000: return {'label': 'fabled', 'value': 10000000, 'color': (255, 5, 5)} # 1 in 100M
+        elif selector <= 100: return {'label': 'mythic', 'value': 100000000, 'color': (212, 76, 115)} # 1 in 100M
+        elif selector <= 1_000: return {'label': 'fabled', 'value': 10000000, 'color': (255, 5, 5)} # 1 in 10M
         elif selector <= 10_000: return {'label': 'legendary', 'value': 1000000, 'color': (240, 203, 58)} # 1 in 100K
         elif selector <= 100_000: return {'label': 'epic', 'value': 100000, 'color': (152, 47, 222)} # 1 in 10K
         elif selector <= 1_000_000: return {'label': 'rare', 'value': 10000, 'color': (56, 107, 194)} # 1 in 1K
@@ -397,6 +397,17 @@ class Item(pg.sprite.Sprite):
         elif selector <= 95: return {"label": "Pristine", 'multiplier': 25, 'color': (93, 224, 49)}
         elif selector <= 99: return {"label": "Divine", 'multiplier': 50, 'color': (106, 255, 0)}
         else: return {"label": "Perfect", 'multiplier': 1_000, 'color': RainbowConfig(True)}
+
+    def select_category(self, selector: float) -> list:
+        if selector == 1: return ["ingredients"] # 1 in 100M
+        elif selector <= 10: return ["ingredients"] # 1 in 10M
+        elif selector <= 100: return ["ingredients"]# 1 in 1M
+        elif selector <= 1_000: return ["ingredients"] # 1 in 100K
+        elif selector <= 10_000: return ["fossil", "onyx", "amethyst"] # 1 in 10K
+        elif selector <= 150_150: return ["amber", "emerald", "jade", "silver", "sapphire"] # 1 in 666
+        elif selector <= 5_000_000: return ["leather", "bronze"] # 1 in 20
+        else: return ["ingredients"] # Guarenteed
+
 
     def serialize(self) -> dict:
         serialization = self.storage_serialize()
