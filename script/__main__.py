@@ -461,7 +461,7 @@ class Item(pg.sprite.Sprite):
             'mutations': self.mutations,
         }
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return f"Item: {self.name}, Rarity: {self.rarity['label'].title()}, Durability: {self.durability['label'].title()}, Weight: {self.weight}, Mutations: {self.mutations}"
 
 class StorageItem(pg.sprite.Sprite):
@@ -535,7 +535,7 @@ class StorageItem(pg.sprite.Sprite):
                 stored_item_list.remove(self)
                 del self
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return f"Item: {self.name}, Rarity: {self.rarity['label'].title()}, Durability: {self.durability['label'].title()}, Weight: {self.weight}, Mutations: {self.mutations}"
 
 class CraftableItem(pg.sprite.Sprite):
@@ -581,7 +581,7 @@ class CraftableItem(pg.sprite.Sprite):
             self.text['name'].draw(screen, new_pos = (self.rect.centerx, centery+389*C.SCALE_Y))
             self.text['labeled_amount'].draw(screen, new_pos = (self.rect.centerx, centery+120*C.SCALE_Y))
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return f"Item: {self.name}, Quantity: {self.amount}"
 
 class Button:
