@@ -590,7 +590,8 @@ class CraftableItem(pg.sprite.Sprite):
         self.random_y_offset = (self.random_y_offset+0.08) % (2*math.pi)
         new_y = self.y + 2*math.sin(self.random_y_offset)
         self.rect = self.image.get_rect(topleft=(self.x, new_y))
-        screen.blit(self.image, self.rect)
+        new_image = self.image if self.amount else pg.transform.grayscale(self.image)
+        screen.blit(new_image, self.rect)
 
     def update_and_draw_gui(self, screen: pg.Surface, player: Player, gui: pg.Surface):
         if self.rect.colliderect(player.rect):
