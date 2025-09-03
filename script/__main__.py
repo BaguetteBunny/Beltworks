@@ -841,10 +841,11 @@ factory = Factory()
 factory_background = Background(BACKGROUNDS[player.current_background])
 storage_background = Storage()
 
+
+item_storage_button = Button(image = pg.image.load(BUTTON_PATH + "Storage.png").convert_alpha(), pos = (1450*C.SCALE_X, 350*C.SCALE_Y))
+craftable_storage_button = Button(image = pg.image.load(BUTTON_PATH + "Craftables.png").convert_alpha(), pos = (1450*C.SCALE_X, 475*C.SCALE_Y))
 shop_button = Button(image = pg.image.load(BUTTON_PATH + "Shop.png").convert_alpha(), pos = (1605*C.SCALE_X, 350*C.SCALE_Y))
 factory_button = Button(image = pg.image.load(BUTTON_PATH + "Return.png").convert_alpha(), pos = (1738*C.SCALE_X, 350*C.SCALE_Y))
-item_storage_button = Button(image = pg.image.load(BUTTON_PATH + "Storage.png").convert_alpha(), pos = (1450*C.SCALE_X, 350*C.SCALE_Y))
-craftable_storage_button = Button(image = pg.image.load(BUTTON_PATH + "Craftables.png").convert_alpha(), pos = (1738*C.SCALE_X, 400*C.SCALE_Y))
 
 collision_box = pg.Rect(0, 850*C.SCALE_Y, 1920*C.SCALE_X, 100*C.SCALE_Y)
 sell_box = SellBox(1284*C.SCALE_X, 831*C.SCALE_Y, 60*C.SCALE_X, 10*C.SCALE_Y)
