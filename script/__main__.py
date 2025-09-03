@@ -11,7 +11,7 @@ SCREEN = pg.display.set_mode(largest_size, pg.FULLSCREEN | pg.HWACCEL | pg.HWSUR
 pg.display.set_caption("Testing")
 
 # Functions
-def build_image_dict(root_folder: str) -> dict:
+def build_item_image_dict(root_folder: str) -> dict:
     root = Path(root_folder)
     result = {}
 
@@ -21,6 +21,24 @@ def build_image_dict(root_folder: str) -> dict:
                       if file.is_file() and file.suffix.lower() in {".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"}]
             result[subfolder.name] = images
     return result
+
+def build_craftable_json(root_folder: str, json_path: str) -> dict:
+    root = Path(root_folder)
+    result = {}
+
+    for subfolder in root.iterdir():
+        if subfolder.is_dir():
+            for file in subfolder.iterdir():
+                result[subfolder.name] = {str(file): 0 for file in subfolder.iterdir()
+                                          if file.is_file() and file.suffix.lower() in {".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"}}
+
+    if not json.loads(open(json_path).read()):
+        with open(json_path, 'w') as file:
+            json.dump(result, file, indent=1)
+        return result
+
+    else:
+        return json.loads(open(json_path).read())
 
 # Assets
 ASSETS_PATH = "./assets/"
@@ -32,13 +50,15 @@ BACKGROUNDS_PATH = ASSETS_PATH + "./backgrounds/"
 DB_PATH = "db/"
 FACTORY_JSON_PATH = DB_PATH + "factory_items.json"
 STORAGE_JSON_PATH = DB_PATH + "storage_items.json"
+CRAFTABLE_JSON_PATH = DB_PATH + "craftable_items.json"
 PLAYER_JSON_PATH = DB_PATH + "stats.json"
 
 GUI = {
     'item_menu': pg.transform.smoothscale_by(pg.image.load(MENU_PATH + "Item_Menu.png").convert_alpha(), C.SCALE_X*1.5),
 }
 
-ITEMS = build_image_dict(ASSETS_PATH + "items")
+ITEMS = build_item_image_dict(ASSETS_PATH + "items")
+CRAFTABLES = build_craftable_json(ASSETS_PATH + "craftable", CRAFTABLE_JSON_PATH)
 FONTS = {
     "4XS": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 2),
     "3XS": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 5),
@@ -518,6 +538,52 @@ class StorageItem(pg.sprite.Sprite):
     def __str__(self) -> str:
         return f"Item: {self.name}, Rarity: {self.rarity['label'].title()}, Durability: {self.durability['label'].title()}, Weight: {self.weight}, Mutations: {self.mutations}"
 
+class CraftableItem(pg.sprite.Sprite):
+    def __init__(self, stored_dict: dict, pos: tuple[float | int, float | int]) -> None:
+        pg.sprite.Sprite.__init__(self)
+
+        self.path = stored_dict['path']
+        self.name = stored_dict['name']
+        self.amount = stored_dict['amount']
+
+        self.old_mouse_pos = ()
+        self.og_x, self.og_y = pos
+        self.x = pos[0] * C.SCALE_X
+        self.y = pos[1] * C.SCALE_Y
+        self.random_y_offset = math.pi * random.random() * (-1)**(random.randint(1,2))
+
+        # Image
+        self.image = pg.image.load(self.path).convert_alpha()
+        self.image = pg.transform.smoothscale_by(self.image, C.SCALE_X*0.75)
+        self.rect = self.image.get_rect(topleft=(self.x, self.y))
+        
+        # Text
+        self.text = {
+            'name': Text(text = f"{self.name}", font = FONTS["XS"], color = (255,255,255), pos = (self.x, self.y), is_centered = True, is_bold = True),
+            'amount' : Text(text = f"{self.amount}", is_number_formatting = True)
+        }
+        self.text['labeled_amount'] = Text(text = f"Quantity: {self.text['amount'].text}", font = FONTS["S"], color = (255,255,255), pos = (self.x, self.y), is_centered = True)
+    
+    def draw(self, screen: pg.Surface):
+        self.random_y_offset = (self.random_y_offset+0.08) % (2*math.pi)
+        new_y = self.y + 2*math.sin(self.random_y_offset)
+        self.rect = self.image.get_rect(topleft=(self.x, new_y))
+        screen.blit(self.image, self.rect)
+
+    def update_and_draw_gui(self, screen: pg.Surface, player: Player, gui: pg.Surface):
+        if self.rect.colliderect(player.rect):
+            centerx = self.rect.centerx - gui.get_width() // 2
+            centery = self.rect.centery - gui.get_height() - 20*C.SCALE_Y
+            if self.og_y == 304:
+                centery += 450 * C.SCALE_Y
+            screen.blit(gui, (centerx, centery))
+
+            self.text['name'].draw(screen, new_pos = (self.rect.centerx, centery+389*C.SCALE_Y))
+            self.text['labeled_amount'].draw(screen, new_pos = (self.rect.centerx, centery+120*C.SCALE_Y))
+
+    def __str__(self) -> str:
+        return f"Item: {self.name}, Quantity: {self.amount}"
+
 class Button:
     def __init__(self,
                  image: pg.Surface,
@@ -803,7 +869,7 @@ while True:
 
     elif player.state == State.ITEM_STORAGE: ...
 
-    if (item_storage_button.clicked(player, 128) and not player.state == State.ITEM_STORAGE) or player.state == State.ITEM_STORAGE_REFRESH:
+    if (item_storage_button.clicked(player, 128)) or player.state == State.ITEM_STORAGE_REFRESH:
         stored_item_group = pg.sprite.Group()
         player.state = State.ITEM_STORAGE
         if os.path.getsize(STORAGE_JSON_PATH) > 0:

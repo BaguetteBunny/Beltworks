@@ -2,8 +2,10 @@ tempCodeRunnerFile.py
 __pycache__
 .design
 To-Do.md
+todo
+
 storage_items.json
 factory_items.json
-stats.json
 artifact_items.json
-todo
+craftable_items.json
+stats.json
