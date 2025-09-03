@@ -78,6 +78,7 @@ class Shapes(enum.Enum):
 class State(enum.Enum):
     FACTORY = 0
     ITEM_STORAGE = 1
+    ITEM_STORAGE_REFRESH = 1.5
 
 class SellBox(pg.Rect):
     def __init__(self, left: float, top: float, width: float, height: float):
@@ -408,7 +409,6 @@ class Item(pg.sprite.Sprite):
         elif selector <= 5_000_000: return ["leather", "bronze"] # 1 in 20
         else: return ["ingredients"] # Guarenteed
 
-
     def serialize(self) -> dict:
         serialization = self.storage_serialize()
         serialization['x'] = self.x
@@ -441,7 +441,7 @@ class Item(pg.sprite.Sprite):
         return f"Item: {self.name}, Rarity: {self.rarity['label'].title()}, Durability: {self.durability['label'].title()}, Weight: {self.weight}, Mutations: {self.mutations}"
 
 class StorageItem(pg.sprite.Sprite):
-    def __init__(self, stored_dict: dict, pos: tuple[float | int, float | int]) -> None:
+    def __init__(self, stored_dict: dict, pos: tuple[float | int, float | int], current_time: time) -> None:
         pg.sprite.Sprite.__init__(self)
 
         self.path = stored_dict['path']
@@ -458,6 +458,7 @@ class StorageItem(pg.sprite.Sprite):
 
         self.old_mouse_pos = ()
         self.og_x, self.og_y = pos
+        self.current_time = current_time
         self.x = pos[0] * C.SCALE_X
         self.y = pos[1] * C.SCALE_Y
         self.random_y_offset = math.pi * random.random() * (-1)**(random.randint(1,2))
@@ -497,7 +498,7 @@ class StorageItem(pg.sprite.Sprite):
             self.text['durability'].draw(screen, new_pos = (self.rect.centerx, centery+145*C.SCALE_Y))
             self.text['labeled_value'].draw(screen, new_pos = (self.rect.centerx, centery+170*C.SCALE_Y))
 
-            if player.right_clicked:
+            if player.right_clicked and (time.time() - self.current_time >= 0.5):
                 with open(json_path, "r") as f:
                     data = json.load(f)
                 index_to_remove = int((10 * (self.og_y - 304) + (self.og_x - 224)) / 96)
@@ -506,6 +507,7 @@ class StorageItem(pg.sprite.Sprite):
                     json.dump(data, f, indent=1)
 
                 player.currency += self.value
+                player.state = State.ITEM_STORAGE_REFRESH
                 stored_item_list.remove(self)
                 del self
 
@@ -797,7 +799,7 @@ while True:
 
     elif player.state == State.ITEM_STORAGE: ...
 
-    if item_storage_button.clicked(player, 128) and not player.state == State.ITEM_STORAGE:
+    if (item_storage_button.clicked(player, 128) and not player.state == State.ITEM_STORAGE) or player.state == State.ITEM_STORAGE_REFRESH:
         stored_item_group = pg.sprite.Group()
         player.state = State.ITEM_STORAGE
         if os.path.getsize(STORAGE_JSON_PATH) > 0:
@@ -805,7 +807,7 @@ while True:
             for item in json.loads(open(STORAGE_JSON_PATH).read()):
                 x = 224 + 96 * i
                 y = 304 + 96 * j
-                stored_item_group.add(StorageItem(stored_dict = item, pos = (x, y)))
+                stored_item_group.add(StorageItem(stored_dict = item, pos = (x, y), current_time = time.time()))
                 i = (i + 1) % 10
                 if not i:
                     j += 1
