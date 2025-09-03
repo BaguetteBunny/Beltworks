@@ -99,6 +99,8 @@ class State(enum.Enum):
     FACTORY = 0
     ITEM_STORAGE = 1
     ITEM_STORAGE_REFRESH = 1.5
+    CRAFTABLE_STORAGE = 2
+    CRAFTABLE_STORAGE_REFRESH = 2.5
 
 class SellBox(pg.Rect):
     def __init__(self, left: float, top: float, width: float, height: float):
@@ -539,12 +541,14 @@ class StorageItem(pg.sprite.Sprite):
         return f"Item: {self.name}, Rarity: {self.rarity['label'].title()}, Durability: {self.durability['label'].title()}, Weight: {self.weight}, Mutations: {self.mutations}"
 
 class CraftableItem(pg.sprite.Sprite):
-    def __init__(self, stored_dict: dict, pos: tuple[float | int, float | int]) -> None:
+    def __init__(self, path: str, amount: int, pos: tuple[float | int, float | int]) -> None:
         pg.sprite.Sprite.__init__(self)
 
-        self.path = stored_dict['path']
-        self.name = stored_dict['name']
-        self.amount = stored_dict['amount']
+        self.path = path
+        pure_path = Path(self.path)
+        self.category = pure_path.parts[2].title()
+        self.name = pure_path.parts[3].replace(".png", "").replace("_", " ").title()
+        self.amount = amount
 
         self.old_mouse_pos = ()
         self.og_x, self.og_y = pos
@@ -582,7 +586,7 @@ class CraftableItem(pg.sprite.Sprite):
             self.text['labeled_amount'].draw(screen, new_pos = (self.rect.centerx, centery+120*C.SCALE_Y))
 
     def __repr__(self) -> str:
-        return f"Item: {self.name}, Quantity: {self.amount}"
+        return f"Item: {self.name}, Quantity: {self.amount}, Category: {self.category}"
 
 class Button:
     def __init__(self,
@@ -835,11 +839,12 @@ class Storage:
 player = Player()
 factory = Factory()
 factory_background = Background(BACKGROUNDS[player.current_background])
-item_storage = Storage()
+storage_background = Storage()
 
 shop_button = Button(image = pg.image.load(BUTTON_PATH + "Shop.png").convert_alpha(), pos = (1605*C.SCALE_X, 350*C.SCALE_Y))
 factory_button = Button(image = pg.image.load(BUTTON_PATH + "Return.png").convert_alpha(), pos = (1738*C.SCALE_X, 350*C.SCALE_Y))
 item_storage_button = Button(image = pg.image.load(BUTTON_PATH + "Storage.png").convert_alpha(), pos = (1450*C.SCALE_X, 350*C.SCALE_Y))
+craftable_storage_button = Button(image = pg.image.load(BUTTON_PATH + "Craftables.png").convert_alpha(), pos = (1738*C.SCALE_X, 400*C.SCALE_Y))
 
 collision_box = pg.Rect(0, 850*C.SCALE_Y, 1920*C.SCALE_X, 100*C.SCALE_Y)
 sell_box = SellBox(1284*C.SCALE_X, 831*C.SCALE_Y, 60*C.SCALE_X, 10*C.SCALE_Y)
@@ -848,6 +853,7 @@ particles = []
 
 item_group = pg.sprite.Group()
 stored_item_group = pg.sprite.Group()
+stored_craftable_group = pg.sprite.Group()
 if os.path.getsize(FACTORY_JSON_PATH) > 0:
     for item in json.loads(open(FACTORY_JSON_PATH).read()):
         item_group.add(Item(ITEMS, item))
@@ -874,14 +880,34 @@ while True:
         player.state = State.ITEM_STORAGE
         if os.path.getsize(STORAGE_JSON_PATH) > 0:
             i, j, x, y = 0, 0, 0, 0
-            for item in json.loads(open(STORAGE_JSON_PATH).read()):
+            data: list = json.loads(open(STORAGE_JSON_PATH).read())
+            
+            for item in data:
                 x = 224 + 96 * i
                 y = 304 + 96 * j
                 stored_item_group.add(StorageItem(stored_dict = item, pos = (x, y), current_time = time.time()))
                 i = (i + 1) % 10
                 if not i:
                     j += 1
-            del i, j, x, y
+            del i, j, x, y, data
+
+    elif (craftable_storage_button.clicked(player, 128)) or player.state == State.CRAFTABLE_STORAGE_REFRESH:
+        stored_craftable_group = pg.sprite.Group()
+        player.state = State.CRAFTABLE_STORAGE
+        if os.path.getsize(CRAFTABLE_JSON_PATH) > 0:
+            i, j, x, y = 0, 0, 0, 0
+            data: dict = json.loads(open(CRAFTABLE_JSON_PATH).read())
+
+            for _, assets in data.items():
+                assets: dict
+                for path, amount in assets.items():
+                    x = 224 + 96 * i
+                    y = 304 + 96 * j
+                    stored_craftable_group.add(CraftableItem(path = path, amount = amount, pos = (x, y)))
+                    i = (i + 1) % 10
+                    if not i:
+                        j += 1
+            del i, j, x, y, data
 
     elif factory_button.clicked(player, 128):
         player.state = State.FACTORY
@@ -900,15 +926,26 @@ while True:
     item_storage_button.draw(SCREEN, player)
     factory_button.draw(SCREEN, player)
     shop_button.draw(SCREEN, player)
+    craftable_storage_button.draw(SCREEN, player)
 
     if player.state == State.ITEM_STORAGE:
-        item_storage.draw(screen = SCREEN)
+        storage_background.draw(screen = SCREEN)
         for item in stored_item_group:
             item: StorageItem
             item.draw(screen = SCREEN)
         for item in stored_item_group:
             item: StorageItem
             item.update_and_draw_gui(screen = SCREEN, player = player, stored_item_list = stored_item_group, gui = GUI["item_menu"])
+
+    elif player.state == State.CRAFTABLE_STORAGE:
+        storage_background.draw(screen = SCREEN)
+        for item in stored_craftable_group:
+            item: CraftableItem
+            item.draw(screen = SCREEN)
+        for item in stored_craftable_group:
+            item: CraftableItem
+            item.update_and_draw_gui(screen = SCREEN, player = player, gui = GUI["item_menu"])
+
 
     for particle in particles:
         particle: Particle
