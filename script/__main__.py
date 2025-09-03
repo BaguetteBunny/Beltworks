@@ -28,17 +28,35 @@ def build_craftable_json(root_folder: str, json_path: str) -> dict:
 
     for subfolder in root.iterdir():
         if subfolder.is_dir():
-            for file in subfolder.iterdir():
-                result[subfolder.name] = {str(file): 0 for file in subfolder.iterdir()
-                                          if file.is_file() and file.suffix.lower() in {".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"}}
+            files = {
+                str(file): 0
+                for file in subfolder.iterdir()
+                if file.is_file() and file.suffix.lower() in {".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"}
+            }
+            if files:
+                result[subfolder.name] = files
 
-    if not json.loads(open(json_path).read()):
-        with open(json_path, 'w') as file:
-            json.dump(result, file, indent=1)
-        return result
-
+    if Path(json_path).exists():
+        with open(json_path, "r") as f:
+            try:
+                existing = json.load(f)
+            except json.JSONDecodeError:
+                existing = {}
     else:
-        return json.loads(open(json_path).read())
+        existing = {}
+
+    final_data = result if not existing else existing
+    order = ["powder", "ruby", "aventurine", "aquamarine", "jasper", "accessory", "armor"]
+    ordered_data = {key: final_data[key] for key in order if key in final_data}
+
+    for key in final_data:
+        if key not in ordered_data:
+            ordered_data[key] = final_data[key]
+
+    with open(json_path, "w") as f:
+        json.dump(ordered_data, f, indent=1)
+
+    return ordered_data
 
 # Assets
 ASSETS_PATH = "./assets/"
