@@ -156,6 +156,10 @@ class Player(pg.sprite.Sprite):
         if not self.current_background:
             self.current_background = "default"
 
+        self.max_storage_page = data.get("storage")
+        if not self.max_storage_page:
+            self.max_storage_page = 1
+
     def update(self) -> None:
         self.rect.topleft = self.pos = pg.mouse.get_pos()
         buttons = pg.mouse.get_pressed()
@@ -352,13 +356,13 @@ class Item(pg.sprite.Sprite):
             else:
                 with open(storage_path, 'r') as file:
                     data = json.load(file)
-                    
-            data.append(self.storage_serialize())
-            with open(storage_path, 'w') as file:
-                json.dump(data, file, indent=1)
 
-            group.remove(self)
-            del self
+            if len(data) < player.max_storage_page * 80:
+                data.append(self.storage_serialize())
+                with open(storage_path, 'w') as file:
+                    json.dump(data, file, indent=1)
+                group.remove(self)
+                del self
 
     def draw(self, screen: pg.Surface, player: Player, gui: pg.Surface):
         rotated_image = pg.transform.rotate(self.image, self.angle)
