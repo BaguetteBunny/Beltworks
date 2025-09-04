@@ -3,11 +3,8 @@ import os, json
 from pathlib import Path
 
 pg.init()
-clock = pg.time.Clock()
-
 largest_size = pg.display.list_modes()[0]
 SCREEN = pg.display.set_mode(largest_size, pg.FULLSCREEN | pg.HWACCEL | pg.HWSURFACE)
-pg.display.set_caption("Testing")
 
 import constants as C
 from configs import State
@@ -17,6 +14,9 @@ from player import Player
 from menu import Factory, Background, SellBox, Storage
 from button import Button
 from particle import Particle
+
+clock = pg.time.Clock()
+pg.display.set_caption(f"Boltworks | {C.VERSION}")
 
 # Functions
 def build_item_image_dict(root_folder: str) -> dict:

@@ -12,6 +12,8 @@ SCALE_Y=SCREEN_HEIGHT / 1080
 
 FPS = 60
 
+VERSION = "Alpha v0"
+
 # Assets
 ASSETS_PATH = "./assets/"
 MENU_PATH = ASSETS_PATH + "./menu/"
