@@ -1,5 +1,5 @@
 import pygame as pg
-import os, json, time
+import os, json
 from pathlib import Path
 
 pg.init()
