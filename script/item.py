@@ -194,14 +194,14 @@ class Item(pg.sprite.Sprite):
             self.text['labeled_value'].draw(screen, new_pos = (self.rect.centerx, centery+170*C.SCALE_Y))
 
     def select_rarity(self, selector: float) -> dict:
-        if selector == 1: return {'label': 'supreme', 'value': 1000000000, 'color': RainbowConfig(True)} # 1 in 1B
-        elif selector <= 100: return {'label': 'mythic', 'value': 100000000, 'color': (212, 76, 115)} # 1 in 100M
-        elif selector <= 1_000: return {'label': 'fabled', 'value': 10000000, 'color': (255, 5, 5)} # 1 in 10M
-        elif selector <= 10_000: return {'label': 'legendary', 'value': 1000000, 'color': (240, 203, 58)} # 1 in 100K
-        elif selector <= 100_000: return {'label': 'epic', 'value': 100000, 'color': (152, 47, 222)} # 1 in 10K
-        elif selector <= 1_000_000: return {'label': 'rare', 'value': 10000, 'color': (56, 107, 194)} # 1 in 1K
-        elif selector <= 10_000_000: return {'label': 'uncommon', 'value': 1000, 'color': (56, 194, 93)} # 1 in 100 
-        else: return {'label': 'common', 'value': 10, 'color': (255,255,255)} # Guarenteed
+        if selector == 1: return {'label': 'supreme', 'value': 10_000, 'color': RainbowConfig(True)} # 1 in 1B
+        elif selector <= 100: return {'label': 'mythic', 'value': 5_000, 'color': (212, 76, 115)} # 1 in 100M
+        elif selector <= 1_000: return {'label': 'fabled', 'value': 1_000, 'color': (255, 5, 5)} # 1 in 10M
+        elif selector <= 10_000: return {'label': 'legendary', 'value': 500, 'color': (240, 203, 58)} # 1 in 100K
+        elif selector <= 100_000: return {'label': 'epic', 'value': 100, 'color': (152, 47, 222)} # 1 in 10K
+        elif selector <= 1_000_000: return {'label': 'rare', 'value': 50, 'color': (56, 107, 194)} # 1 in 1K
+        elif selector <= 10_000_000: return {'label': 'uncommon', 'value': 10, 'color': (56, 194, 93)} # 1 in 100 
+        else: return {'label': 'common', 'value': 1, 'color': (255,255,255)} # Guarenteed
     
     def select_durability(self, selector: float) -> dict:
         if selector <= 1: return {'label': "Cursed", 'multiplier': 0, 'color': (31, 9, 10)}
