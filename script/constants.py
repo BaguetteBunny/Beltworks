@@ -21,8 +21,8 @@ BACKGROUNDS_PATH = ASSETS_PATH + "./backgrounds/"
 
 DB_PATH = "db/"
 FACTORY_JSON_PATH = DB_PATH + "factory_items.json"
-STORAGE_JSON_PATH = DB_PATH + "storage_items.json"
-CRAFTABLE_JSON_PATH = DB_PATH + "craftable_items.json"
+ARTIFACT_JSON_PATH = DB_PATH + "artifact_items.json"
+INGREDIENT_JSON_PATH = DB_PATH + "ingredient_items.json"
 PLAYER_JSON_PATH = DB_PATH + "stats.json"
 
 GUI = {

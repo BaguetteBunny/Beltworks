@@ -11,7 +11,7 @@ pg.display.set_caption("Testing")
 
 import constants as C
 from configs import State
-from item import Item, StorageItem, CraftableItem
+from item import Item, IngredientItem, ArtifactItem
 from text import Text
 from player import Player
 from menu import Factory, Background, SellBox, Storage
@@ -30,7 +30,7 @@ def build_item_image_dict(root_folder: str) -> dict:
             result[subfolder.name] = images
     return result
 
-def build_craftable_json(root_folder: str, json_path: str) -> dict:
+def build_ingredients_json(root_folder: str, json_path: str) -> dict:
     root = Path(root_folder)
     result = {}
 
@@ -54,7 +54,7 @@ def build_craftable_json(root_folder: str, json_path: str) -> dict:
         existing = {}
 
     final_data = result if not existing else existing
-    order = ["powder", "ruby", "aventurine", "aquamarine", "jasper", "accessory", "armor"]
+    order = ["powder", "ruby", "aventurine", "aquamarine", "jasper"]
     ordered_data = {key: final_data[key] for key in order if key in final_data}
 
     for key in final_data:
@@ -66,16 +66,18 @@ def build_craftable_json(root_folder: str, json_path: str) -> dict:
 
     return ordered_data
 
+
 ITEMS = build_item_image_dict(C.ASSETS_PATH + "items")
-CRAFTABLES = build_craftable_json(C.ASSETS_PATH + "craftable", C.CRAFTABLE_JSON_PATH)
+INGREDIENTS = build_ingredients_json(C.ASSETS_PATH + "ingredient", C.INGREDIENT_JSON_PATH)
+ARTIFACTS = json.loads(open(C.ARTIFACT_JSON_PATH).read())
 
 player = Player()
 factory = Factory(screen = SCREEN)
 factory_background = Background(C.BACKGROUNDS[player.current_background])
 storage_background = Storage()
 
-item_storage_button = Button(image = pg.image.load(C.BUTTON_PATH + "Storage.png").convert_alpha(), pos = (1450*C.SCALE_X, 350*C.SCALE_Y))
-craftable_storage_button = Button(image = pg.image.load(C.BUTTON_PATH + "Craftables.png").convert_alpha(), pos = (1450*C.SCALE_X, 475*C.SCALE_Y))
+artifact_storage_button = Button(image = pg.image.load(C.BUTTON_PATH + "Artifacts.png").convert_alpha(), pos = (1450*C.SCALE_X, 350*C.SCALE_Y))
+ingredient_storage_button = Button(image = pg.image.load(C.BUTTON_PATH + "Ingredients.png").convert_alpha(), pos = (1450*C.SCALE_X, 475*C.SCALE_Y))
 shop_button = Button(image = pg.image.load(C.BUTTON_PATH + "Shop.png").convert_alpha(), pos = (1605*C.SCALE_X, 350*C.SCALE_Y))
 factory_button = Button(image = pg.image.load(C.BUTTON_PATH + "Return.png").convert_alpha(), pos = (1738*C.SCALE_X, 350*C.SCALE_Y))
 
@@ -85,8 +87,8 @@ sell_box = SellBox(1284*C.SCALE_X, 831*C.SCALE_Y, 60*C.SCALE_X, 10*C.SCALE_Y)
 particles = []
 
 item_group = pg.sprite.Group()
-stored_item_group = pg.sprite.Group()
-stored_craftable_group = pg.sprite.Group()
+stored_ingredient_group = pg.sprite.Group()
+stored_artifact_group = pg.sprite.Group()
 if os.path.getsize(C.FACTORY_JSON_PATH) > 0:
     for item in json.loads(open(C.FACTORY_JSON_PATH).read()):
         item_group.add(Item(ITEMS, item))
@@ -106,37 +108,39 @@ while True:
         if player.do_drop_items():
             item_group.add(Item(ITEMS))
 
-    elif player.state == State.ITEM_STORAGE: ...
+    elif player.state == State.INGREDIENT_STORAGE: ...
 
-    if (item_storage_button.clicked(player, 128)) or player.state == State.ITEM_STORAGE_REFRESH:
-        stored_item_group = pg.sprite.Group()
-        player.state = State.ITEM_STORAGE
-        if os.path.getsize(C.STORAGE_JSON_PATH) > 0:
+    if (ingredient_storage_button.clicked(player, 128)) or player.state == State.INGREDIENT_STORAGE_REFRESH:
+        stored_ingredient_group = pg.sprite.Group()
+        player.state = State.INGREDIENT_STORAGE
+        if os.path.getsize(C.INGREDIENT_JSON_PATH) > 0:
             i, j, x, y = 0, 0, 0, 0
-            data: list = json.loads(open(C.STORAGE_JSON_PATH).read())
-            
-            for item in data:
-                x = 224 + 96 * i
-                y = 304 + 96 * j
-                stored_item_group.add(StorageItem(stored_dict = item, pos = (x, y), current_time = time.time()))
-                i = (i + 1) % 10
-                if not i:
-                    j += 1
-            del i, j, x, y, data
-
-    elif (craftable_storage_button.clicked(player, 128)) or player.state == State.CRAFTABLE_STORAGE_REFRESH:
-        stored_craftable_group = pg.sprite.Group()
-        player.state = State.CRAFTABLE_STORAGE
-        if os.path.getsize(C.CRAFTABLE_JSON_PATH) > 0:
-            i, j, x, y = 0, 0, 0, 0
-            data: dict = json.loads(open(C.CRAFTABLE_JSON_PATH).read())
+            data: dict = json.loads(open(C.INGREDIENT_JSON_PATH).read())
 
             for _, assets in data.items():
                 assets: dict
                 for path, amount in assets.items():
                     x = 224 + 96 * i
                     y = 304 + 96 * j
-                    stored_craftable_group.add(CraftableItem(path = path, amount = amount, pos = (x, y)))
+                    stored_ingredient_group.add(IngredientItem(path = path, amount = amount, pos = (x, y)))
+                    i = (i + 1) % 10
+                    if not i:
+                        j += 1
+            del i, j, x, y, data
+
+    elif (artifact_storage_button.clicked(player, 128)) or player.state == State.ARTIFACT_STORAGE_REFRESH:
+        stored_artifact_group = pg.sprite.Group()
+        player.state = State.ARTIFACT_STORAGE
+        if os.path.getsize(C.ARTIFACT_JSON_PATH) > 0:
+            i, j, x, y = 0, 0, 0, 0
+            data: dict = json.loads(open(C.ARTIFACT_JSON_PATH).read())
+
+            for _, assets in data.items():
+                assets: dict
+                for path, info in assets.items():
+                    x = 224 + 96 * i
+                    y = 304 + 96 * j
+                    stored_artifact_group.add(ArtifactItem(path = path, owned = True if info[0] else False, description = info[1], pos = (x, y)))
                     i = (i + 1) % 10
                     if not i:
                         j += 1
@@ -156,27 +160,29 @@ while True:
     currency_text = Text(text = f"{player.currency}", color = (255, 202, 0), pos = (1920*C.SCALE_X, 200*C.SCALE_Y), font=C.FONTS['XL'], is_centered = True, is_number_formatting = True)
     currency_text.draw(screen = SCREEN)
 
-    item_storage_button.draw(SCREEN, player)
+    ingredient_storage_button.draw(SCREEN, player)
     factory_button.draw(SCREEN, player)
     shop_button.draw(SCREEN, player)
-    craftable_storage_button.draw(SCREEN, player)
+    artifact_storage_button.draw(SCREEN, player)
 
-    if player.state == State.ITEM_STORAGE:
+    if player.state == State.INGREDIENT_STORAGE:
         storage_background.draw(screen = SCREEN)
-        for item in stored_item_group:
-            item: StorageItem
+        for item in stored_ingredient_group:
+            item: IngredientItem
             item.draw(screen = SCREEN)
-        for item in stored_item_group:
-            item: StorageItem
-            item.update_and_draw_gui(screen = SCREEN, player = player, stored_item_list = stored_item_group, gui = C.GUI["item_menu"])
 
-    elif player.state == State.CRAFTABLE_STORAGE:
+        for item in stored_ingredient_group:
+            item: IngredientItem
+            item.update_and_draw_gui(screen = SCREEN, player = player, gui = C.GUI["item_menu"])
+
+    elif player.state == State.ARTIFACT_STORAGE:
         storage_background.draw(screen = SCREEN)
-        for item in stored_craftable_group:
-            item: CraftableItem
+        for item in stored_artifact_group:
+            item: ArtifactItem
             item.draw(screen = SCREEN)
-        for item in stored_craftable_group:
-            item: CraftableItem
+
+        for item in stored_artifact_group:
+            item: ArtifactItem
             item.update_and_draw_gui(screen = SCREEN, player = player, gui = C.GUI["item_menu"])
 
 

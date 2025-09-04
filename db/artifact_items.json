@@ -1,0 +1,10 @@
+{
+ "weapon": {
+  "assets/artifact/weapon/excalibur.png": [0, "text here"],
+  "assets/artifact/weapon/durendal.png": [0, "text here"]
+ },
+ "special": {
+  "assets/artifact/special/gentleman_suit.png": [0, "text here"],
+  "assets/artifact/special/maid_outfit.png": [0, "text here"]
+ }
+}

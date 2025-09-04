@@ -6,6 +6,6 @@ todo
 
 storage_items.json
 factory_items.json
-artifact_items.json
-craftable_items.json
+ingredient_items.json
+potion_items.json
 stats.json
