@@ -66,7 +66,6 @@ def build_ingredients_json(root_folder: str, json_path: str) -> dict:
 
     return ordered_data
 
-
 ITEMS = build_item_image_dict(C.ASSETS_PATH + "items")
 INGREDIENTS = build_ingredients_json(C.ASSETS_PATH + "ingredient", C.INGREDIENT_JSON_PATH)
 ARTIFACTS = json.loads(open(C.ARTIFACT_JSON_PATH).read())
