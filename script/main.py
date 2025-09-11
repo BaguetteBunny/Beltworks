@@ -25,10 +25,10 @@ def build_item_image_dict(root_folder: str) -> dict:
 
     for category in root.iterdir():
         if category.is_dir():
-            slots = {str(i): [] for i in range(1, 6)}
+            slots = {}
 
             for slot in category.iterdir():
-                if slot.is_dir() and slot.name in slots:
+                if slot.is_dir():
                     images = [
                         str(file) for file in slot.iterdir()
                         if file.is_file() and file.suffix.lower() in {".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"}
