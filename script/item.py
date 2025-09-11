@@ -14,6 +14,11 @@ class Item(pg.sprite.Sprite):
         if preexisting_item:
             self.path = preexisting_item['path']
             self.name = preexisting_item['name']
+
+            pure_path = Path(self.path)
+            self.category = pure_path.parts[2]
+            self.tier = int(pure_path.parts[3])
+
             self.rarity = preexisting_item['rarity']
             self.durability = preexisting_item['durability']
             self.weight = preexisting_item['weight']
@@ -27,11 +32,15 @@ class Item(pg.sprite.Sprite):
             if not isinstance(self.durability['color'], list):
                 self.durability['color'] = RainbowConfig(True, self.durability['color']['hue_step'], self.durability['color']['fixed_lightness'])
         else:
-            category_picked = random.choice(self.select_category(random.randint(1,100_000_000)))
-            self.path: str = random.choice(item_dict[category_picked])
+            self.category, self.tier = random.choice(self.select_category(random.randint(1,100_000_000)))
+            # Failsafe
+            while not item_dict[self.category][f"{self.tier}"]:
+                self.category, self.tier = random.choice(self.select_category(random.randint(1,100_000_000)))
+            
+            self.path: str = random.choice(item_dict[self.category][f"{self.tier}"])
             pure_path = Path(self.path)
-            self.category = pure_path.parts[2]
-            self.name = pure_path.parts[3].replace(".png", "").replace("_", " ").title()
+            
+            self.name = pure_path.parts[4].replace(".png", "").replace("_", " ").title()
             self.durability = self.select_durability(random.gauss(50, 15))
             self.rarity = self.select_rarity(random.randint(1,1_000_000_000))
             self.weight = 2.5
@@ -195,15 +204,30 @@ class Item(pg.sprite.Sprite):
         elif selector <= 99: return {"label": "Divine", 'multiplier': 50, 'color': (106, 255, 0)}
         else: return {"label": "Perfect", 'multiplier': 1_000, 'color': RainbowConfig(True)}
 
-    def select_category(self, selector: float) -> list:
-        if selector == 1: return ["ingredients"] # 1 in 100M
-        elif selector <= 10: return ["ingredients"] # 1 in 10M
-        elif selector <= 100: return ["ingredients"]# 1 in 1M
-        elif selector <= 1_000: return ["ingredients"] # 1 in 100K
-        elif selector <= 10_000: return ["fossil", "onyx", "amethyst"] # 1 in 10K
-        elif selector <= 150_150: return ["amber", "emerald", "jade", "silver", "sapphire"] # 1 in 666
-        elif selector <= 5_000_000: return ["leather", "bronze"] # 1 in 20
-        else: return ["ingredients"] # Guarenteed
+    def select_category(self, selector: float) -> list[tuple]:
+        if selector == 1: # 1 in 100M
+            return [("ingredients", 5), ("onyx", 5), ("amethyst", 5)]
+        
+        elif selector <= 10: # 1 in 10M
+            return [("amber", 5), ("emerald", 5), ("jade", 5), ("sapphire", 5), ("fossil", 5), ("onyx", 4), ("amethyst", 4)]
+        
+        elif selector <= 100: # 1 in 1M
+            return [("ingredients", 4), ("silver", 5), ("amber", 4), ("emerald", 4), ("jade", 4), ("sapphire", 4), ("fossil", 4), ("onyx", 3), ("amethyst", 3)]
+        
+        elif selector <= 1_000: # 1 in 100K
+            return [("leather", 5), ("bronze", 5), ("silver", 4), ("amber", 3), ("emerald", 3), ("jade", 3), ("sapphire", 3), ("fossil", 3), ("onyx", 2), ("amethyst", 2)]
+        
+        elif selector <= 10_000: # 1 in 10K
+            return [("ingredients", 3), ("leather", 4), ("bronze", 4), ("silver", 3), ("amber", 2), ("emerald", 2), ("jade", 2), ("sapphire", 2), ("fossil", 2), ("onyx", 1), ("amethyst", 1)]
+        
+        elif selector <= 150_150: # 1 in 666
+            return [("leather", 3), ("bronze", 3), ("silver", 2), ("amber", 1), ("emerald", 1), ("jade", 1), ("sapphire", 1), ("fossil", 1)]
+        
+        elif selector <= 5_000_000: # 1 in 20
+            return [("ingredients", 2), ("leather", 2), ("bronze", 2), ("silver", 1)]
+        
+        else: # Guarenteed
+            return [("ingredients", 1), ("leather", 1), ("bronze", 1)]
 
     def serialize(self) -> dict:
         rarity_color = vars(self.rarity["color"]) if isinstance(self.rarity['color'], RainbowConfig) else self.rarity['color']

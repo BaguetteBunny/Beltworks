@@ -23,11 +23,20 @@ def build_item_image_dict(root_folder: str) -> dict:
     root = Path(root_folder)
     result = {}
 
-    for subfolder in root.iterdir():
-        if subfolder.is_dir():
-            images = [str(file) for file in subfolder.iterdir()
-                      if file.is_file() and file.suffix.lower() in {".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"}]
-            result[subfolder.name] = images
+    for category in root.iterdir():
+        if category.is_dir():
+            slots = {str(i): [] for i in range(1, 6)}
+
+            for slot in category.iterdir():
+                if slot.is_dir() and slot.name in slots:
+                    images = [
+                        str(file) for file in slot.iterdir()
+                        if file.is_file() and file.suffix.lower() in {".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"}
+                    ]
+                    slots[slot.name] = images
+
+            result[category.name] = slots
+
     return result
 
 def build_ingredients_json(root_folder: str, json_path: str) -> dict:
