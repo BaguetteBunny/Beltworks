@@ -204,7 +204,7 @@ class Item(pg.sprite.Sprite):
         elif selector <= 99: return {"label": "Divine", 'multiplier': 50, 'color': (106, 255, 0)}
         else: return {"label": "Perfect", 'multiplier': 1_000, 'color': RainbowConfig(True)}
 
-    def select_category(self, selector: float) -> list[tuple]:
+    def select_category(self, selector: float) -> list[tuple[str, int]]:
         if selector == 1: # 1 in 100M
             return [("ingredients", 5), ("onyx", 5), ("amethyst", 5)]
         
@@ -212,22 +212,22 @@ class Item(pg.sprite.Sprite):
             return [("amber", 5), ("emerald", 5), ("jade", 5), ("sapphire", 5), ("fossil", 5), ("onyx", 4), ("amethyst", 4)]
         
         elif selector <= 100: # 1 in 1M
-            return [("ingredients", 4), ("silver", 5), ("amber", 4), ("emerald", 4), ("jade", 4), ("sapphire", 4), ("fossil", 4), ("onyx", 3), ("amethyst", 3)]
+            return [("ingredients", 4), ("leather", 5), ("bronze", 5), ("silver", 5), ("amber", 4), ("emerald", 4), ("jade", 4), ("sapphire", 4), ("fossil", 4), ("onyx", 3), ("amethyst", 3)]
         
         elif selector <= 1_000: # 1 in 100K
-            return [("leather", 5), ("bronze", 5), ("silver", 4), ("amber", 3), ("emerald", 3), ("jade", 3), ("sapphire", 3), ("fossil", 3), ("onyx", 2), ("amethyst", 2)]
+            return [("leather", 4), ("bronze", 4), ("silver", 4), ("amber", 3), ("emerald", 3), ("jade", 3), ("sapphire", 3), ("fossil", 3), ("onyx", 2), ("amethyst", 2)]
         
         elif selector <= 10_000: # 1 in 10K
-            return [("ingredients", 3), ("leather", 4), ("bronze", 4), ("silver", 3), ("amber", 2), ("emerald", 2), ("jade", 2), ("sapphire", 2), ("fossil", 2), ("onyx", 1), ("amethyst", 1)]
+            return [("ingredients", 3), ("leather", 3), ("bronze", 3), ("silver", 3), ("amber", 2), ("emerald", 2), ("jade", 2), ("sapphire", 2), ("fossil", 2), ("onyx", 1), ("amethyst", 1)]
         
         elif selector <= 150_150: # 1 in 666
-            return [("leather", 3), ("bronze", 3), ("silver", 2), ("amber", 1), ("emerald", 1), ("jade", 1), ("sapphire", 1), ("fossil", 1)]
+            return [("leather", 2), ("bronze", 2), ("silver", 2), ("amber", 1), ("emerald", 1), ("jade", 1), ("sapphire", 1), ("fossil", 1)]
         
         elif selector <= 5_000_000: # 1 in 20
-            return [("ingredients", 2), ("leather", 2), ("bronze", 2), ("silver", 1)]
+            return [("ingredients", 2), ("leather", 1), ("bronze", 1), ("silver", 1)]
         
         else: # Guarenteed
-            return [("ingredients", 1), ("leather", 1), ("bronze", 1)]
+            return [("trash", 1), ("ingredients", 1)]
 
     def serialize(self) -> dict:
         rarity_color = vars(self.rarity["color"]) if isinstance(self.rarity['color'], RainbowConfig) else self.rarity['color']
