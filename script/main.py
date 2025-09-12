@@ -92,14 +92,9 @@ factory_button = Button(image = pg.image.load(C.BUTTON_PATH + "Return.png").conv
 collision_box = pg.Rect(0, 850*C.SCALE_Y, 1920*C.SCALE_X, 100*C.SCALE_Y)
 sell_box = SellBox(1284*C.SCALE_X, 831*C.SCALE_Y, 60*C.SCALE_X, 10*C.SCALE_Y)
 
-particles = []
-
-item_group = pg.sprite.Group()
-stored_ingredient_group = pg.sprite.Group()
-stored_artifact_group = pg.sprite.Group()
 if os.path.getsize(C.FACTORY_JSON_PATH) > 0:
     for item in json.loads(open(C.FACTORY_JSON_PATH).read()):
-        item_group.add(Item(player, ITEMS, item))
+        player.item_group.add(Item(player, ITEMS, item))
 
 # Loop
 while True:
@@ -110,11 +105,11 @@ while True:
     pg.display.update()
     player.update()
     if player.state == State.FACTORY:
-        item_group.update(player, item_group, collision_box, sell_box)
+        player.item_group.update(player, collision_box, sell_box)
         factory.update()
-        sell_box.update(particles)
+        sell_box.update(player.particles)
         if player.do_drop_items():
-            item_group.add(Item(player, ITEMS))
+            player.item_group.add(Item(player, ITEMS))
 
     elif player.state == State.INGREDIENT_STORAGE: ...
 
@@ -161,7 +156,7 @@ while True:
     # Draw -----------------------------------------------------------------------------------------------
     SCREEN.fill((0, 0, 0))
     factory_background.draw(SCREEN)
-    for item in item_group:
+    for item in player.item_group:
         item: Item
         item.draw(SCREEN, player, C.GUI["item_menu"])
     factory.draw(SCREEN)
@@ -194,9 +189,9 @@ while True:
             item.update_and_draw_gui(screen = SCREEN, player = player, gui = C.GUI["item_menu"])
 
 
-    for particle in particles:
+    for particle in player.particles:
         particle: Particle
-        particle.update_and_draw(screen = SCREEN, particle_list = particles)
+        particle.update_and_draw(screen = SCREEN, particle_list = player.particles)
 
     # Event Handling -------------------------------------------------------------------------------------
     for event in pg.event.get():
@@ -209,7 +204,7 @@ while True:
 
         if event.type == pg.QUIT:
             with open(C.FACTORY_JSON_PATH, 'w') as file:
-                json.dump([item.serialize() for item in item_group], file, indent=1)
+                json.dump([item.serialize() for item in player.item_group], file, indent=1)
             with open(C.PLAYER_JSON_PATH, 'w') as file:
                 json.dump([player.serialize()], file, indent=1)
             pg.quit()

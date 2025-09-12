@@ -81,24 +81,23 @@ class Item(pg.sprite.Sprite):
         }
         self.text['labeled_value'] = Text(text = f"Value: {self.text['value'].text} ¤", font = C.FONTS["S"], color = (255,255,255), pos = (self.x, self.y), is_centered = True)
 
-    def update(self, player: Player, group: pg.sprite.Group, collision_box: pg.Rect, sell_box: pg.Rect) -> None:
+    def update(self, player: Player, collision_box: pg.Rect, sell_box: pg.Rect) -> None:
         self.y += self.y_velocity
         self.x += self.x_velocity
         self.y_velocity += 0.5 * self.weight
         self.rect.topleft = (self.x, self.y)
         
-        self.check_sell(sell_box, player, group)
-        self.check_collision(collision_box, player, group)
+        self.check_sell(sell_box, player)
+        self.check_collision(collision_box, player)
 
-    def check_sell(self, sell_box: pg.Rect, player: Player, group: pg.sprite.Group) -> None:
+    def check_sell(self, sell_box: pg.Rect, player: Player) -> None:
         if self.rect.colliderect(sell_box):
             player.currency += self.value
-            
 
-            group.remove(self)
+            player.item_group.remove(self)
             del self
 
-    def check_collision(self, collision_box: pg.Rect, player: Player, group: pg.sprite.Group) -> None:
+    def check_collision(self, collision_box: pg.Rect, player: Player) -> None:
         # Check for window collision
         if self.x < 0:
             self.x = 0
@@ -144,7 +143,7 @@ class Item(pg.sprite.Sprite):
         else:
             self.dragged = False
 
-        for item in group:
+        for item in player.item_group:
             item: Item
             if item != self and self.rect.colliderect(item.rect):
                 dx = self.rect.centerx - item.rect.centerx

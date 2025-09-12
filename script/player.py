@@ -13,6 +13,11 @@ class Player(pg.sprite.Sprite):
         self.path = preexisting_stats_path
         self.state = menu_state
 
+        self.particles = []
+        self.item_group = pg.sprite.Group()
+        self.stored_ingredient_group = pg.sprite.Group()
+        self.stored_artifact_group = pg.sprite.Group()
+
         data: dict = self.deserialize()[0]
 
         self.currency = data.get("currency")
