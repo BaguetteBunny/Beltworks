@@ -156,7 +156,7 @@ class Item(pg.sprite.Sprite):
                 nx, ny = dx / distance, dy / distance
 
                 bounce = 0.5/self.weight + 0.5*item.weight
-                bounce *= 0.5 * (self.weight + item.weight) / distance
+                bounce *= 0.1 * (self.weight + item.weight) / distance
                 bounce = max(bounce, 0.1)
 
                 self.x_velocity += nx * bounce
@@ -171,9 +171,9 @@ class Item(pg.sprite.Sprite):
                 item.x -= nx * separation
                 item.y -= ny * separation
 
-                self.angle += (self.x_velocity+self.y_velocity)/(1.5*self.weight)
+                self.angle += (self.x_velocity+self.y_velocity)/(3*self.weight)
                 self.angle %= 360
-                item.angle += (item.x_velocity+item.y_velocity)/(1.5*item.weight)
+                item.angle += (item.x_velocity+item.y_velocity)/(3*item.weight)
                 item.angle %= 360
 
     def draw(self, screen: pg.Surface, player: Player, gui: pg.Surface):
