@@ -1,5 +1,5 @@
 import pygame as pg
-import random, math
+import random, math, json
 from pathlib import Path
 
 import constants as C
@@ -70,6 +70,7 @@ class Item(pg.sprite.Sprite):
         self.image = pg.transform.smoothscale_by(self.image, C.SCALE_X*0.75)
         self.rect = self.image.get_rect(topleft=(100*C.SCALE_X, -100))
 
+        # Value
         self.value = self.player_multipliers["value"] + (self.rarity["value"] * self.durability["multiplier"])
 
         # Text
@@ -93,6 +94,8 @@ class Item(pg.sprite.Sprite):
     def check_sell(self, sell_box: pg.Rect, player: Player) -> None:
         if self.rect.colliderect(sell_box):
             player.currency += self.value
+
+            self.serialize_ingredient()
 
             player.item_group.remove(self)
             del self
@@ -217,19 +220,19 @@ class Item(pg.sprite.Sprite):
             return [("ingredients", 5), ("onyx", 5), ("amethyst", 5)]
         
         elif selector <= 10: # 1 in 10M
-            return [("amber", 5), ("emerald", 5), ("jade", 5), ("sapphire", 5), ("fossil", 5), ("onyx", 4), ("amethyst", 4)]
+            return [("amber", 5), ("emerald", 5), ("sapphire", 5), ("fossil", 5), ("onyx", 4), ("amethyst", 4)]
         
         elif selector <= 100: # 1 in 1M
-            return [("ingredients", 4), ("leather", 5), ("bronze", 5), ("silver", 5), ("amber", 4), ("emerald", 4), ("jade", 4), ("sapphire", 4), ("fossil", 4), ("onyx", 3), ("amethyst", 3)]
+            return [("ingredients", 4), ("leather", 5), ("bronze", 5), ("silver", 5), ("amber", 4), ("emerald", 4), ("sapphire", 4), ("fossil", 4), ("onyx", 3), ("amethyst", 3)]
         
         elif selector <= 1_000: # 1 in 100K
-            return [("leather", 4), ("bronze", 4), ("silver", 4), ("amber", 3), ("emerald", 3), ("jade", 3), ("sapphire", 3), ("fossil", 3), ("onyx", 2), ("amethyst", 2)]
+            return [("leather", 4), ("bronze", 4), ("silver", 4), ("amber", 3), ("emerald", 3), ("sapphire", 3), ("fossil", 3), ("onyx", 2), ("amethyst", 2)]
         
         elif selector <= 10_000: # 1 in 10K
-            return [("ingredients", 3), ("leather", 3), ("bronze", 3), ("silver", 3), ("amber", 2), ("emerald", 2), ("jade", 2), ("sapphire", 2), ("fossil", 2), ("onyx", 1), ("amethyst", 1)]
+            return [("ingredients", 3), ("leather", 3), ("bronze", 3), ("silver", 3), ("amber", 2), ("emerald", 2), ("sapphire", 2), ("fossil", 2), ("onyx", 1), ("amethyst", 1)]
         
         elif selector <= 150_150: # 1 in 666
-            return [("leather", 2), ("bronze", 2), ("silver", 2), ("amber", 1), ("emerald", 1), ("jade", 1), ("sapphire", 1), ("fossil", 1)]
+            return [("leather", 2), ("bronze", 2), ("silver", 2), ("amber", 1), ("emerald", 1), ("sapphire", 1), ("fossil", 1)]
         
         elif selector <= 5_000_000: # 1 in 20
             return [("ingredients", 2), ("leather", 1), ("bronze", 1), ("silver", 1)]
@@ -260,6 +263,56 @@ class Item(pg.sprite.Sprite):
             'y': self.y,
             'angle': self.angle
         }
+
+    def serialize_ingredient(self, json_path: str = C.INGREDIENT_JSON_PATH):
+        if self.category in {"ingredients", "trash", "fossil", "leather"}:
+            return
+        
+        # Generate random quantity
+        T = self.tier + 1
+        bias = random.random() ** 3
+        hard_min = T * 2 - 3    # 1     3       5       7       9
+        hard_max = T ** 3       # 8     27      64      125     216
+        quantity = int(bias * (hard_max - hard_min))
+
+        # Generate random ingredient
+        if self.category in {"bronze", "silver", "gold", "amber", "emerald", "sapphire", "onyx", "amethyst"}:
+            id_tier = T
+            for _ in range(3): id_tier -= random.random()
+            id_tier = int(id_tier)
+
+            if id_tier <= 0:
+                image_name = "raw_" + self.category + "_ore"
+                category = "raw_ore"
+            elif id_tier == 1:
+                image_name = self.category + "_powder"
+                category = "powder"
+            elif id_tier == 2:
+                image_name = self.category + "_gemstone"
+                category = "gemstone"
+            elif id_tier == 3:
+                image_name = "refined_" + self.category + "_gemstone"
+                category = "gemstone"
+            else:
+                raise ValueError("How the fuck did this even happen? @ serialize_ingredient")
+        
+        # Add to ingredient json
+        json_file = Path(json_path)
+        with open(json_file, "r") as f:
+            data = json.load(f)
+
+        if category not in data:
+            raise KeyError(f"Category '{category}' not found")
+
+        for path in data[category]:
+            path: str
+            if path.endswith(f"{image_name}.png"):
+                data[category][path] += quantity
+                with open(json_file, "w") as f_write:
+                    json.dump(data, f_write, indent=1)
+                return
+        
+        raise KeyError(f"Item '{image_name}' not found in category '{category}'")
 
     def __repr__(self) -> str:
         return f"Item: {self.name}, Rarity: {self.rarity['label'].title()}, Durability: {self.durability['label'].title()}, Weight: {self.weight}, Mutations: {self.mutations}"
