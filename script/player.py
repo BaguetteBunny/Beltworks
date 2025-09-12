@@ -78,7 +78,6 @@ class Player(pg.sprite.Sprite):
             'storage': self.max_storage_page,
             'rarity_multiplier': self.rarity_multiplier,
             'durability_multiplier': self.durability_multiplier,
-            'sell_multiplier': self.sell_multiplier,
             'category_multiplier': self.category_multiplier,
             'ingredient_multiplier': self.ingredient_multiplier,
             'value_multiplier': self.value_multiplier,
