@@ -8,8 +8,16 @@ from text import Text
 from player import Player
 
 class Item(pg.sprite.Sprite):
-    def __init__(self, item_dict: dict, preexisting_item: dict | None = None) -> None:
+    def __init__(self, player: Player, item_dict: dict, preexisting_item: dict | None = None) -> None:
         pg.sprite.Sprite.__init__(self)
+
+        self.player_multipliers = {
+            "rarity": player.rarity_multiplier,
+            "durability": player.durability_multiplier,
+            "value": player.value_multiplier,
+            "ingredient": player.ingredient_multiplier,
+            "category": player.category_multiplier,
+        }
 
         if preexisting_item:
             self.path = preexisting_item['path']
@@ -62,7 +70,7 @@ class Item(pg.sprite.Sprite):
         self.image = pg.transform.smoothscale_by(self.image, C.SCALE_X*0.75)
         self.rect = self.image.get_rect(topleft=(100*C.SCALE_X, -100))
 
-        self.value = self.rarity["value"] * self.durability["multiplier"]
+        self.value = self.player_multipliers["value"] + (self.rarity["value"] * self.durability["multiplier"])
 
         # Text
         self.text = {
@@ -85,6 +93,7 @@ class Item(pg.sprite.Sprite):
     def check_sell(self, sell_box: pg.Rect, player: Player, group: pg.sprite.Group) -> None:
         if self.rect.colliderect(sell_box):
             player.currency += self.value
+            
 
             group.remove(self)
             del self

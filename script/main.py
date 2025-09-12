@@ -99,7 +99,7 @@ stored_ingredient_group = pg.sprite.Group()
 stored_artifact_group = pg.sprite.Group()
 if os.path.getsize(C.FACTORY_JSON_PATH) > 0:
     for item in json.loads(open(C.FACTORY_JSON_PATH).read()):
-        item_group.add(Item(ITEMS, item))
+        item_group.add(Item(player, ITEMS, item))
 
 # Loop
 while True:
@@ -114,7 +114,7 @@ while True:
         factory.update()
         sell_box.update(particles)
         if player.do_drop_items():
-            item_group.add(Item(ITEMS))
+            item_group.add(Item(player, ITEMS))
 
     elif player.state == State.INGREDIENT_STORAGE: ...
 

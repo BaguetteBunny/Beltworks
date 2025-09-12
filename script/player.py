@@ -31,6 +31,26 @@ class Player(pg.sprite.Sprite):
         if not self.max_storage_page:
             self.max_storage_page = 1
 
+        self.rarity_multiplier = data.get("rarity_multiplier")
+        if not self.rarity_multiplier:
+            self.rarity_multiplier = 1
+
+        self.durability_multiplier = data.get("durability_multiplier")
+        if not self.durability_multiplier:
+            self.durability_multiplier = 1
+
+        self.category_multiplier = data.get("category_multiplier")
+        if not self.category_multiplier:
+            self.category_multiplier = 1
+
+        self.ingredient_multiplier = data.get("ingredient_multiplier")
+        if not self.ingredient_multiplier:
+            self.ingredient_multiplier = 1
+
+        self.value_multiplier = data.get("value_multiplier")
+        if not self.value_multiplier:
+            self.value_multiplier = 1
+
     def update(self) -> None:
         self.rect.topleft = self.pos = pg.mouse.get_pos()
         buttons = pg.mouse.get_pressed()
@@ -55,6 +75,13 @@ class Player(pg.sprite.Sprite):
             'currency': self.currency,
             'droprate': self.max_droprate,
             'bg': self.current_background,
+            'storage': self.max_storage_page,
+            'rarity_multiplier': self.rarity_multiplier,
+            'durability_multiplier': self.durability_multiplier,
+            'sell_multiplier': self.sell_multiplier,
+            'category_multiplier': self.category_multiplier,
+            'ingredient_multiplier': self.ingredient_multiplier,
+            'value_multiplier': self.value_multiplier,
         }
     
     def deserialize(self) -> dict:
