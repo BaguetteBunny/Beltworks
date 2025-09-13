@@ -96,7 +96,7 @@ class Player(pg.sprite.Sprite):
         except:
             return {}
 
-    def item_lookup(name: str, category: str, json_path: str, action: ItemAction, value: int = 0) -> str | None:
+    def item_lookup(name: str, category: str, json_path: str, action: ItemAction = ItemAction.RETURN_IAP, value: int = 0) -> str | None:
         json_file = Path(json_path)
         with open(json_file, "r") as f:
             data = json.load(f)
@@ -125,4 +125,4 @@ class Player(pg.sprite.Sprite):
                     
                     case _:
                         raise ValueError(f"ItemAction Member '{action}' not found.")
-        raise ValueError(f"Image path not found.")
+        raise KeyError(f"Item '{name}' not found in category '{category}'")
