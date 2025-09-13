@@ -1,9 +1,9 @@
 import pygame as pg
-import random, math, json
+import random, math
 from pathlib import Path
 
 import constants as C
-from configs import RainbowConfig
+from configs import RainbowConfig, ItemAction
 from text import Text
 from player import Player
 
@@ -95,7 +95,7 @@ class Item(pg.sprite.Sprite):
         if self.rect.colliderect(sell_box):
             player.currency += self.value
 
-            self.serialize_ingredient()
+            self.serialize_ingredient(player)
 
             player.item_group.remove(self)
             del self
@@ -264,7 +264,7 @@ class Item(pg.sprite.Sprite):
             'angle': self.angle
         }
 
-    def serialize_ingredient(self, json_path: str = C.INGREDIENT_JSON_PATH):
+    def serialize_ingredient(self, player: Player, json_path: str = C.INGREDIENT_JSON_PATH):
         if self.category in {"ingredients", "trash", "fossil", "leather"}:
             return
         
@@ -296,23 +296,7 @@ class Item(pg.sprite.Sprite):
             else:
                 raise ValueError("How the fuck did this even happen? @ serialize_ingredient")
         
-        # Add to ingredient json
-        json_file = Path(json_path)
-        with open(json_file, "r") as f:
-            data = json.load(f)
-
-        if category not in data:
-            raise KeyError(f"Category '{category}' not found")
-
-        for path in data[category]:
-            path: str
-            if path.endswith(f"{image_name}.png"):
-                data[category][path] += quantity
-                with open(json_file, "w") as f_write:
-                    json.dump(data, f_write, indent=1)
-                return
-        
-        raise KeyError(f"Item '{image_name}' not found in category '{category}'")
+        player.item_lookup(image_name, category, json_path, ItemAction.INGREDIENT_INCREMENT, quantity)
 
     def __repr__(self) -> str:
         return f"Item: {self.name}, Rarity: {self.rarity['label'].title()}, Durability: {self.durability['label'].title()}, Weight: {self.weight}, Mutations: {self.mutations}"
@@ -419,3 +403,6 @@ class ArtifactItem(pg.sprite.Sprite):
 
     def __repr__(self) -> str:
         return f"Item: {self.name}, Owned: {self.owned}, Category: {self.category}"
+
+class CraftableComponent():
+    def __init__(self, type: IngredientItem | ArtifactItem, ): ...
