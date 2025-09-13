@@ -234,7 +234,7 @@ class Item(pg.sprite.Sprite):
         elif selector <= 150_150: # 1 in 666
             return [("leather", 2), ("bronze", 2), ("silver", 2), ("amber", 1), ("emerald", 1), ("sapphire", 1), ("fossil", 1)]
         
-        elif selector <= 5_000_000: # 1 in 20
+        elif selector <= 50_000_000: # 1 in 20
             return [("ingredients", 2), ("leather", 1), ("bronze", 1), ("silver", 1)]
         
         else: # Guarenteed
@@ -270,15 +270,15 @@ class Item(pg.sprite.Sprite):
         
         # Generate random quantity
         T = self.tier + 1
-        bias = random.random() ** 3
+        bias = random.random() ** 5
         hard_min = T * 2 - 3    # 1     3       5       7       9
         hard_max = T ** 3       # 8     27      64      125     216
-        quantity = int(bias * (hard_max - hard_min))
+        quantity = int(bias * (hard_max - hard_min)) + 1
 
         # Generate random ingredient
         if self.category in {"bronze", "silver", "gold", "amber", "emerald", "sapphire", "onyx", "amethyst"}:
             id_tier = T
-            for _ in range(3): id_tier -= random.random()
+            for _ in range(5): id_tier -= random.random()
             id_tier = int(id_tier)
 
             if id_tier <= 0:
