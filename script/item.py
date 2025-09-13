@@ -234,7 +234,7 @@ class Item(pg.sprite.Sprite):
         elif selector <= 150_150: # 1 in 666
             return [("leather", 2), ("bronze", 2), ("silver", 2), ("amber", 1), ("emerald", 1), ("sapphire", 1), ("fossil", 1)]
         
-        elif selector <= 50_000_000: # 1 in 20
+        elif selector <= 5_000_000: # 1 in 20
             return [("ingredients", 2), ("leather", 1), ("bronze", 1), ("silver", 1)]
         
         else: # Guarenteed
@@ -349,7 +349,12 @@ class IngredientItem(pg.sprite.Sprite):
         self.random_y_offset = (self.random_y_offset+0.08) % (2*math.pi)
         new_y = self.y + 2*math.sin(self.random_y_offset)
         self.rect = self.image.get_rect(topleft=(self.x, new_y))
-        new_image = self.image if self.amount else pg.transform.grayscale(self.image)
+
+        if self.amount:
+            new_image = self.image
+        else:
+            new_image = pg.transform.grayscale(self.image)
+            new_image.set_alpha(120)
         screen.blit(new_image, self.rect)
 
     def update_and_draw_gui(self, screen: pg.Surface, player: Player, gui: pg.Surface):
