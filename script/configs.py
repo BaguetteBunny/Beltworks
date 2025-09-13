@@ -17,3 +17,8 @@ class State(enum.Enum):
     INGREDIENT_STORAGE_REFRESH = 1.5
     ARTIFACT_STORAGE = 2
     ARTIFACT_STORAGE_REFRESH = 2.5
+
+class ItemAction(enum.Enum):
+    RETURN_IAP = 0
+    INGREDIENT_INCREMENT = 1
+    ARTIFACT_SET_OWNERSHIP = 2

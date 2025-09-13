@@ -1,8 +1,9 @@
 import pygame as pg
+from pathlib import Path
 import json
 
 import constants as C
-from configs import State
+from configs import State, ItemAction
 
 class Player(pg.sprite.Sprite):
     def __init__(self, preexisting_stats_path: str = C.PLAYER_JSON_PATH, menu_state: State = State.FACTORY) -> None:
@@ -94,3 +95,34 @@ class Player(pg.sprite.Sprite):
                 return json.load(f)
         except:
             return {}
+
+    def item_lookup(name: str, category: str, json_path: str, action: ItemAction, value: int = 0) -> str | None:
+        json_file = Path(json_path)
+        with open(json_file, "r") as f:
+            data = json.load(f)
+
+        if category not in data:
+            raise KeyError(f"Category '{category}' not found")
+
+        for path in data[category]:
+            path: str
+            if path.endswith(f"{name}.png"):
+                match action:
+                    case ItemAction.INGREDIENT_INCREMENT:
+                        data[category][path] += value
+                        with open(json_file, "w") as f_write:
+                            json.dump(data, f_write, indent=1)
+                        return
+                    
+                    case ItemAction.ARTIFACT_SET_OWNERSHIP:
+                        data[category][path][0] = value
+                        with open(json_file, "w") as f_write:
+                            json.dump(data, f_write, indent=1)
+                        return
+                    
+                    case ItemAction.RETURN_IAP:
+                        return data[category][path]
+                    
+                    case _:
+                        raise ValueError(f"ItemAction Member '{action}' not found.")
+        raise ValueError(f"Image path not found.")
