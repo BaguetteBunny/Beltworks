@@ -1,5 +1,7 @@
-import ctypes
+import ctypes, json
 import pygame as pg
+from pathlib import Path
+
 user32 = ctypes.windll.user32
 screensize = user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)
 
@@ -33,6 +35,13 @@ GUI = {
     'item_menu': pg.transform.smoothscale_by(pg.image.load(MENU_PATH + "Item_Menu.png").convert_alpha(), SCALE_X*1.5),
 }
 
+BUTTON = {
+    'artifact': pg.image.load(BUTTON_PATH + "Artifacts.png").convert_alpha(),
+    'shop': pg.image.load(BUTTON_PATH + "Shop.png").convert_alpha(),
+    'ingredient': pg.image.load(BUTTON_PATH + "Ingredients.png").convert_alpha(),
+    'factory': pg.image.load(BUTTON_PATH + "Return.png").convert_alpha(),
+}
+
 FONTS = {
     "4XS": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 2),
     "3XS": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 5),
@@ -48,6 +57,7 @@ FONTS = {
     "5XL": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 90),
     "6XL": pg.font.Font(FONTS_PATH + "monogram-extended.ttf", 100),
 }
+
 BACKGROUNDS = {
     "azur": [pg.transform.smoothscale_by(pg.image.load(BACKGROUNDS_PATH + "azur.png").convert_alpha(), SCALE_X), (250,250)],
     "brewing_storm": [pg.transform.smoothscale_by(pg.image.load(BACKGROUNDS_PATH + "brewing_storm.png").convert_alpha(), SCALE_X), (250,250)],
@@ -57,3 +67,63 @@ BACKGROUNDS = {
     "shore": [pg.transform.smoothscale_by(pg.image.load(BACKGROUNDS_PATH + "shore.png").convert_alpha(), SCALE_X), (250,250)],
     "sunset": [pg.transform.smoothscale_by(pg.image.load(BACKGROUNDS_PATH + "sunset.png").convert_alpha(), SCALE_X), (250,250)],
 }
+
+def build_item_image_dict(root_folder: str) -> dict:
+    root = Path(root_folder)
+    result = {}
+
+    for category in root.iterdir():
+        if category.is_dir():
+            slots = {}
+
+            for slot in category.iterdir():
+                if slot.is_dir():
+                    images = [
+                        str(file) for file in slot.iterdir()
+                        if file.is_file() and file.suffix.lower() == ".png"
+                    ]
+                    slots[slot.name] = images
+
+            result[category.name] = slots
+
+    return result
+
+def build_ingredients_json(root_folder: str, json_path: str) -> dict:
+    root = Path(root_folder)
+    result = {}
+
+    for subfolder in root.iterdir():
+        if subfolder.is_dir():
+            files = {
+                str(file): 0
+                for file in subfolder.iterdir()
+                if file.is_file() and file.suffix.lower() == ".png"
+            }
+            if files:
+                result[subfolder.name] = files
+
+    if Path(json_path).exists():
+        with open(json_path, "r") as f:
+            try:
+                existing = json.load(f)
+            except json.JSONDecodeError:
+                existing = {}
+    else:
+        existing = {}
+
+    final_data = result if not existing else existing
+    order = INGREDIENT_DISPLAY_ORDER
+    ordered_data = {key: final_data[key] for key in order if key in final_data}
+
+    for key in final_data:
+        if key not in ordered_data:
+            ordered_data[key] = final_data[key]
+
+    with open(json_path, "w") as f:
+        json.dump(ordered_data, f, indent=1)
+
+    return ordered_data
+
+ITEMS = build_item_image_dict(ASSETS_PATH + "items")
+INGREDIENTS = build_ingredients_json(ASSETS_PATH + "ingredient", INGREDIENT_JSON_PATH)
+ARTIFACTS = json.loads(open(ARTIFACT_JSON_PATH).read())
