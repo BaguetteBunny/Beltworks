@@ -52,7 +52,7 @@ while True:
     elif player.state == State.INGREDIENT_STORAGE: ...
 
     if (ingredient_storage_button.clicked(player, 128)) or player.state == State.INGREDIENT_STORAGE_REFRESH:
-        stored_ingredient_group = pg.sprite.Group()
+        player.stored_ingredient_group = pg.sprite.Group()
         player.state = State.INGREDIENT_STORAGE
         if player.ingredients:
             i, j, x, y = 0, 0, 0, 0
@@ -63,7 +63,7 @@ while True:
                 for path, amount in assets.items():
                     x = 224 + 96 * i
                     y = 304 + 96 * j
-                    stored_ingredient_group.add(IngredientItem(path = path, amount = amount, pos = (x, y)))
+                    player.stored_ingredient_group.add(player.main_ingredient if (player.main_ingredient and player.main_ingredient.path == path) else IngredientItem(path = path, amount = amount, pos = (x, y)))
                     i = (i + 1) % 10
                     if not i:
                         j += 1
@@ -108,11 +108,11 @@ while True:
 
     if player.state == State.INGREDIENT_STORAGE:
         storage_background.draw(screen = SCREEN)
-        for item in stored_ingredient_group:
+        for item in player.stored_ingredient_group:
             item: IngredientItem
             item.draw(screen = SCREEN)
 
-        for item in stored_ingredient_group:
+        for item in player.stored_ingredient_group:
             item: IngredientItem
             item.update_and_draw_gui(screen = SCREEN, player = player, gui = C.GUI["item_menu"])
 
