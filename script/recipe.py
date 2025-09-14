@@ -30,3 +30,10 @@ REFINED_GEMSTONE_RECIPE = {
     "refined_sapphire_gemstone":  [("sapphire_gemstone", "gemstone", 1000), (), (), (), ()],
     "refined_silver_gemstone":    [("silver_gemstone", "gemstone", 1000), (), (), (), ()],
 }
+
+RECIPE_FETCHER = {
+    "powder": POWDER_RECIPE,
+    "gemstone": GEMSTONE_RECIPE,
+    "refined_gemstone": REFINED_GEMSTONE_RECIPE,
+}
+
