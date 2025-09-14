@@ -3,6 +3,7 @@ import random, math
 from pathlib import Path
 
 import constants as C
+import recipe as R
 from configs import RainbowConfig, ItemAction
 from text import Text
 from player import Player
@@ -308,8 +309,9 @@ class IngredientItem(pg.sprite.Sprite):
 
         self.path = path
         pure_path = Path(self.path)
-        self.category = pure_path.parts[2].title()
-        self.name = pure_path.parts[3].replace(".png", "").replace("_", " ").title()
+        self.category = pure_path.parts[2]
+        self.id = pure_path.parts[3].replace(".png", "")
+        self.name = self.id.replace("_", " ").title()
         self.amount = amount
 
         self.old_mouse_pos = ()
@@ -317,6 +319,12 @@ class IngredientItem(pg.sprite.Sprite):
         self.x = pos[0] * C.SCALE_X
         self.y = pos[1] * C.SCALE_Y
         self.random_y_offset = math.pi * random.random() * (-1)**(random.randint(1,2))
+
+        # Recipe
+        try: probable_recipes = R.RECIPE_FETCHER[self.category]
+        except: self.recipe = None
+        else: self.recipe = CraftableComponent(probable_recipes[self.id], self.path) if self.id in probable_recipes.keys() else None
+        self.display_recipe = False
 
         # Image
         self.image = pg.image.load(self.path).convert_alpha()
@@ -353,8 +361,16 @@ class IngredientItem(pg.sprite.Sprite):
             self.text['name'].draw(screen, new_pos = (self.rect.centerx, centery+389*C.SCALE_Y))
             self.text['labeled_amount'].draw(screen, new_pos = (self.rect.centerx, centery+120*C.SCALE_Y))
 
+        if player.left_clicked:
+            self.display_recipe = False
+            if self.rect.colliderect(player.rect):
+                self.display_recipe = not self.display_recipe
+
+        if self.display_recipe and self.recipe:
+            self.recipe.display(screen = screen)
+
     def __repr__(self) -> str:
-        return f"Item: {self.name}, Quantity: {self.amount}, Category: {self.category}"
+        return f"Item: {self.name}, Quantity: {self.amount}, Category: {self.category.title()}"
 
 class ArtifactItem(pg.sprite.Sprite):
     def __init__(self, path: str, owned: bool, description: str, pos: tuple[float | int, float | int]) -> None:
@@ -406,4 +422,42 @@ class ArtifactItem(pg.sprite.Sprite):
         return f"Item: {self.name}, Owned: {self.owned}, Category: {self.category}"
 
 class CraftableComponent():
-    def __init__(self, image_name_input: list[str, str, str, str, str], item_output: IngredientItem | ArtifactItem, ): ...
+    def __init__(self, image_name_input: list[tuple[str, str, int]], image_name_output: str):
+        self.output_path = image_name_output
+
+        OUTPUT_PUREPATH = Path(self.output_path).parts
+        self.output_type = OUTPUT_PUREPATH[1]
+        self.output_category = OUTPUT_PUREPATH[2]
+
+        self.inputs: list[dict] = []
+        for input in image_name_input:
+            if not input:
+                continue
+
+            input_dictionary = {"id": input[0], "quantity": input[2]}
+            input_dictionary["path"] = f"assets/{self.output_type}/{input[1]}/{input_dictionary['id']}.png"
+            input_dictionary["image"] = pg.image.load(input_dictionary["path"]).convert_alpha()
+
+            self.inputs.append(input_dictionary)
+
+    def display(self, screen: pg.Surface):
+        y = 88 * C.SCALE_Y
+
+        craft_slot_x = 416 * C.SCALE_X
+        gap_between_slot = 196*C.SCALE_X
+        for input in self.inputs:
+            input_image: pg.Surface = pg.transform.smoothscale_by(input['image'], C.SCALE_X*0.75)
+            input_rect = input_image.get_rect(center=(craft_slot_x, y))
+            screen.blit(input_image, input_rect)
+            
+            craft_slot_x += gap_between_slot
+
+        result_slot_x = 1056*C.SCALE_X
+        result_image = pg.transform.smoothscale_by(pg.image.load(self.output_path).convert_alpha(), C.SCALE_X)
+        result_rect = result_image.get_rect(center=(result_slot_x, y))
+        screen.blit(result_image, result_rect)
+
+        
+
+        
+
