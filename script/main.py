@@ -32,7 +32,7 @@ sell_box = SellBox(1284*C.SCALE_X, 831*C.SCALE_Y, 60*C.SCALE_X, 10*C.SCALE_Y)
 
 if os.path.getsize(C.FACTORY_JSON_PATH) > 0:
     for item in json.loads(open(C.FACTORY_JSON_PATH).read()):
-        player.item_group.add(Item(player, C.ITEMS, item))
+        player.item_group.add(Item(player, player.items, item))
 
 # Loop
 while True:
@@ -47,16 +47,16 @@ while True:
         factory.update()
         sell_box.update(player.particles)
         if player.do_drop_items():
-            player.item_group.add(Item(player, C.ITEMS))
+            player.item_group.add(Item(player, player.items))
 
     elif player.state == State.INGREDIENT_STORAGE: ...
 
     if (ingredient_storage_button.clicked(player, 128)) or player.state == State.INGREDIENT_STORAGE_REFRESH:
         stored_ingredient_group = pg.sprite.Group()
         player.state = State.INGREDIENT_STORAGE
-        if os.path.getsize(C.INGREDIENT_JSON_PATH) > 0:
+        if player.ingredients:
             i, j, x, y = 0, 0, 0, 0
-            data: dict = json.loads(open(C.INGREDIENT_JSON_PATH).read())
+            data: dict = player.ingredients
 
             for _, assets in data.items():
                 assets: dict
@@ -72,9 +72,9 @@ while True:
     elif (artifact_storage_button.clicked(player, 128)) or player.state == State.ARTIFACT_STORAGE_REFRESH:
         stored_artifact_group = pg.sprite.Group()
         player.state = State.ARTIFACT_STORAGE
-        if os.path.getsize(C.ARTIFACT_JSON_PATH) > 0:
+        if player.artifacts:
             i, j, x, y = 0, 0, 0, 0
-            data: dict = json.loads(open(C.ARTIFACT_JSON_PATH).read())
+            data: dict = player.artifacts
 
             for _, assets in data.items():
                 assets: dict
@@ -145,5 +145,9 @@ while True:
                 json.dump([item.serialize() for item in player.item_group], file, indent=1)
             with open(C.PLAYER_JSON_PATH, 'w') as file:
                 json.dump([player.serialize()], file, indent=1)
+            with open(C.INGREDIENT_JSON_PATH, 'w') as file:
+                json.dump(player.ingredients, file, indent=1)
+            with open(C.ARTIFACT_JSON_PATH, 'w') as file:
+                json.dump(player.artifacts, file, indent=1)
             pg.quit()
             exit()

@@ -3,9 +3,65 @@ from pathlib import Path
 import json
 
 import constants as C
-from configs import State, ItemAction
+from configs import State
 
 class Player(pg.sprite.Sprite):
+    def __build_item_image_dict(self, root_folder: str) -> dict:
+        root = Path(root_folder)
+        result = {}
+
+        for category in root.iterdir():
+            if category.is_dir():
+                slots = {}
+
+                for slot in category.iterdir():
+                    if slot.is_dir():
+                        images = [
+                            str(file) for file in slot.iterdir()
+                            if file.is_file() and file.suffix.lower() == ".png"
+                        ]
+                        slots[slot.name] = images
+
+                result[category.name] = slots
+
+        return result
+
+    def __build_ingredients_json(self, root_folder: str, json_path: str) -> dict:
+        root = Path(root_folder)
+        result = {}
+
+        for subfolder in root.iterdir():
+            if subfolder.is_dir():
+                files = {
+                    str(file): 0
+                    for file in subfolder.iterdir()
+                    if file.is_file() and file.suffix.lower() == ".png"
+                }
+                if files:
+                    result[subfolder.name] = files
+
+        if Path(json_path).exists():
+            with open(json_path, "r") as f:
+                try:
+                    existing = json.load(f)
+                except json.JSONDecodeError:
+                    existing = {}
+        else:
+            existing = {}
+
+        final_data = result if not existing else existing
+        order = C.INGREDIENT_DISPLAY_ORDER
+        ordered_data = {key: final_data[key] for key in order if key in final_data}
+
+        for key in final_data:
+            if key not in ordered_data:
+                ordered_data[key] = final_data[key]
+
+        with open(json_path, "w") as f:
+            json.dump(ordered_data, f, indent=1)
+
+        return ordered_data
+
     def __init__(self, preexisting_stats_path: str = C.PLAYER_JSON_PATH, menu_state: State = State.FACTORY) -> None:
         super().__init__()
         self.rect = pg.Rect(0, 0, 1, 1)
@@ -13,6 +69,10 @@ class Player(pg.sprite.Sprite):
         self.is_dragging = False
         self.path = preexisting_stats_path
         self.state = menu_state
+
+        self.items = self.__build_item_image_dict(C.ASSETS_PATH + "items")
+        self.ingredients = self.__build_ingredients_json(C.ASSETS_PATH + "ingredient", C.INGREDIENT_JSON_PATH)
+        self.artifacts = json.loads(open(C.ARTIFACT_JSON_PATH).read())
 
         self.particles = []
         self.item_group = pg.sprite.Group()
@@ -95,34 +155,3 @@ class Player(pg.sprite.Sprite):
                 return json.load(f)
         except:
             return {}
-
-    def item_lookup(self, name: str, category: str, json_path: str, action: ItemAction = ItemAction.RETURN_IAP, value: int = 0) -> str | None:
-        json_file = Path(json_path)
-        with open(json_file, "r") as f:
-            data = json.load(f)
-
-        if category not in data:
-            raise KeyError(f"Category '{category}' not found")
-
-        for path in data[category]:
-            path: str
-            if path.endswith(f"{name}.png"):
-                match action:
-                    case ItemAction.INGREDIENT_INCREMENT:
-                        data[category][path] += value
-                        with open(json_file, "w") as f_write:
-                            json.dump(data, f_write, indent=1)
-                        return
-                    
-                    case ItemAction.ARTIFACT_SET_OWNERSHIP:
-                        data[category][path][0] = value
-                        with open(json_file, "w") as f_write:
-                            json.dump(data, f_write, indent=1)
-                        return
-                    
-                    case ItemAction.RETURN_IAP:
-                        return data[category][path]
-                    
-                    case _:
-                        raise ValueError(f"ItemAction Member '{action}' not found.")
-        raise KeyError(f"Item '{name}' not found in category '{category}'")

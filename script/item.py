@@ -4,9 +4,10 @@ from pathlib import Path
 
 import constants as C
 import recipe as R
-from configs import RainbowConfig, ItemAction
+from configs import RainbowConfig
 from text import Text
 from player import Player
+from button import Button
 
 class Item(pg.sprite.Sprite):
     def __init__(self, player: Player, item_dict: dict, preexisting_item: dict | None = None) -> None:
@@ -235,7 +236,7 @@ class Item(pg.sprite.Sprite):
         elif selector <= 150_150: # 1 in 666
             return [("leather", 2), ("bronze", 2), ("silver", 2), ("amber", 1), ("emerald", 1), ("sapphire", 1), ("fossil", 1)]
         
-        elif selector <= 5_000_000: # 1 in 20
+        elif selector <= 50_000_000: # 1 in 20
             return [("ingredients", 2), ("leather", 1), ("bronze", 1), ("silver", 1)]
         
         else: # Guarenteed
@@ -297,9 +298,9 @@ class Item(pg.sprite.Sprite):
                 category = "gemstone"
             else:
                 raise ValueError("How the fuck did this even happen? @ gemstone -> serialize_ingredient")
+            
+        player.ingredients[category][f"assets\\ingredient\\{category}\\{image_name}.png"] += quantity
         
-        player.item_lookup(image_name, category, json_path, ItemAction.INGREDIENT_INCREMENT, quantity)
-
     def __repr__(self) -> str:
         return f"Item: {self.name}, Rarity: {self.rarity['label'].title()}, Durability: {self.durability['label'].title()}, Weight: {self.weight}, Mutations: {self.mutations}"
 
@@ -352,7 +353,7 @@ class IngredientItem(pg.sprite.Sprite):
 
     def update_and_draw_gui(self, screen: pg.Surface, player: Player, gui: pg.Surface):
         if self.display_recipe and self.recipe:
-            self.recipe.display(screen = screen)
+            self.recipe.display(screen = screen, player = player)
 
         if self.rect.colliderect(player.rect):
             centerx = self.rect.centerx - gui.get_width() // 2
@@ -421,9 +422,11 @@ class ArtifactItem(pg.sprite.Sprite):
     def __repr__(self) -> str:
         return f"Item: {self.name}, Owned: {self.owned}, Category: {self.category}"
 
-class CraftableComponent():
+class CraftableComponent:
     def __init__(self, image_name_input: list[tuple[str, str, int]], image_name_output: str):
+        self.criteria_unmet_text = Text(text = f"Not enough materials!", font = C.FONTS["S"], color = (255,255,255), pos = (0, 0), is_centered = True)
         self.output_path = image_name_output
+        self.output_button = Button(image = pg.transform.smoothscale_by(pg.image.load(self.output_path).convert_alpha(), C.SCALE_X), pos = (1024 * C.SCALE_X, 56 * C.SCALE_Y))
 
         OUTPUT_PUREPATH = Path(self.output_path).parts
         self.output_type = OUTPUT_PUREPATH[1]
@@ -434,14 +437,18 @@ class CraftableComponent():
             if not input:
                 continue
 
-            input_dictionary = {"id": input[0], "quantity": Text(text = f"{input[2]}", is_number_formatting = True)}
+            input_dictionary = {
+                "id": input[0],
+                "quantity": input[2],
+                "formated_quantity": Text(text = f"{input[2]}", is_number_formatting = True)
+            }
             input_dictionary["path"] = f"assets/{self.output_type}/{input[1]}/{input_dictionary['id']}.png"
             input_dictionary["image"] = pg.image.load(input_dictionary["path"]).convert_alpha()
-            input_dictionary["labeled_quantity"] = Text(text = f"x {input_dictionary['quantity'].text}", font = C.FONTS["S"], color = (255,255,255), pos = (0, 0), is_centered = True)
+            input_dictionary["labeled_quantity"] = Text(text = f"x {input_dictionary['formated_quantity'].text}", font = C.FONTS["S"], color = (255,255,255), pos = (0, 0), is_centered = True)
 
             self.inputs.append(input_dictionary)
 
-    def display(self, screen: pg.Surface):
+    def display(self, screen: pg.Surface, player: Player):
         y = 88 * C.SCALE_Y
         label_y = 132 * C.SCALE_Y
 
@@ -456,10 +463,17 @@ class CraftableComponent():
             
             craft_slot_x += gap_between_slot
 
-        result_slot_x = 1056*C.SCALE_X
-        result_image = pg.transform.smoothscale_by(pg.image.load(self.output_path).convert_alpha(), C.SCALE_X)
-        result_rect = result_image.get_rect(center=(result_slot_x, y))
-        screen.blit(result_image, result_rect)
+        self.output_button.draw(screen = screen)
+        if self.output_button.clicked(player = player, click_opacity = 125):
+            if self.has_requirements():
+                ...
+
+    def has_requirements(self) -> bool:
+        for input in self.inputs: ...
+
+
+        return True
+
 
         
 
