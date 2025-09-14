@@ -457,7 +457,7 @@ class CraftableComponent:
         label_y = 132 * C.SCALE_Y
 
         craft_slot_x = 416 * C.SCALE_X
-        gap_between_slot = 196*C.SCALE_X
+        gap_between_slot = 96*C.SCALE_X
         for input in self.inputs:
             input_image = pg.transform.smoothscale_by(input['image'], C.SCALE_X*0.75)
             input_rect = input_image.get_rect(center=(craft_slot_x, y))
