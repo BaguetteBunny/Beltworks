@@ -48,7 +48,7 @@ def build_ingredients_json(root_folder: str, json_path: str) -> dict:
             files = {
                 str(file): 0
                 for file in subfolder.iterdir()
-                if file.is_file() and file.suffix.lower() in {".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"}
+                if file.is_file() and file.suffix.lower() == ".png"
             }
             if files:
                 result[subfolder.name] = files

@@ -321,7 +321,7 @@ class IngredientItem(pg.sprite.Sprite):
         self.random_y_offset = math.pi * random.random() * (-1)**(random.randint(1,2))
 
         # Recipe
-        try: probable_recipes = R.RECIPE_FETCHER[self.category]
+        try: probable_recipes = R.INGREDIENT_RECIPE_FETCHER[self.category]
         except: self.recipe = None
         else: self.recipe = CraftableComponent(probable_recipes[self.id], self.path) if self.id in probable_recipes.keys() else None
         self.display_recipe = False
