@@ -4,7 +4,7 @@ from pathlib import Path
 
 import constants as C
 import recipe as R
-from configs import RainbowConfig
+from configs import RainbowConfig, State
 from text import Text
 from player import Player
 from button import Button
@@ -353,7 +353,7 @@ class IngredientItem(pg.sprite.Sprite):
 
     def update_and_draw_gui(self, screen: pg.Surface, player: Player, gui: pg.Surface):
         if self.display_recipe and self.recipe:
-            self.recipe.display(screen = screen, player = player)
+            self.recipe.display(screen = screen, player = player, parent = self)
 
         if self.rect.colliderect(player.rect):
             centerx = self.rect.centerx - gui.get_width() // 2
@@ -366,9 +366,12 @@ class IngredientItem(pg.sprite.Sprite):
             self.text['labeled_amount'].draw(screen, new_pos = (self.rect.centerx, centery+120*C.SCALE_Y))
 
         if player.left_clicked:
-            self.display_recipe = False
-            if self.rect.colliderect(player.rect):
-                self.display_recipe = not self.display_recipe
+            if self.rect.colliderect(player.rect) or (self.recipe and self.recipe.output_button.rect.colliderect(player.rect) and self.display_recipe):
+                self.display_recipe = True
+                player.main_ingredient = self
+            elif player.state != State.INGREDIENT_STORAGE_REFRESH:
+                self.display_recipe = False
+                player.main_ingredient = None
 
     def __repr__(self) -> str:
         return f"Item: {self.name}, Quantity: {self.amount}, Category: {self.category.title()}"
@@ -439,16 +442,17 @@ class CraftableComponent:
 
             input_dictionary = {
                 "id": input[0],
+                "category": input[1],
                 "quantity": input[2],
                 "formated_quantity": Text(text = f"{input[2]}", is_number_formatting = True)
             }
-            input_dictionary["path"] = f"assets/{self.output_type}/{input[1]}/{input_dictionary['id']}.png"
+            input_dictionary["path"] = f"assets\\{self.output_type}\\{input_dictionary['category']}\\{input_dictionary['id']}.png"
             input_dictionary["image"] = pg.image.load(input_dictionary["path"]).convert_alpha()
             input_dictionary["labeled_quantity"] = Text(text = f"x {input_dictionary['formated_quantity'].text}", font = C.FONTS["S"], color = (255,255,255), pos = (0, 0), is_centered = True)
 
             self.inputs.append(input_dictionary)
 
-    def display(self, screen: pg.Surface, player: Player):
+    def display(self, screen: pg.Surface, player: Player, parent: IngredientItem | ArtifactItem):
         y = 88 * C.SCALE_Y
         label_y = 132 * C.SCALE_Y
 
@@ -464,14 +468,22 @@ class CraftableComponent:
             craft_slot_x += gap_between_slot
 
         self.output_button.draw(screen = screen)
-        if self.output_button.clicked(player = player, click_opacity = 125):
-            if self.has_requirements():
-                ...
+        if self.output_button.clicked(player = player, click_opacity = 255):
+            if self.has_requirements(player):
+                self.output_button.opacity = 125
+                player.ingredients[self.output_category][self.output_path] += 1
+                parent.amount += 1
+                parent.text['amount'] = Text(text = f"{parent.amount}", is_number_formatting = True)
+                parent.text['labeled_amount'] = Text(text = f"Quantity: {parent.text['amount'].text}", font = C.FONTS["S"], color = (255,255,255), pos = (parent.x, parent.y), is_centered = True)
 
-    def has_requirements(self) -> bool:
-        for input in self.inputs: ... 
+                for input in self.inputs:
+                    player.ingredients[input['category']][input['path']] -= input['quantity']
+                player.state = State.INGREDIENT_STORAGE_REFRESH
 
-
+    def has_requirements(self, player: Player) -> bool:
+        for input in self.inputs:
+            if player.ingredients[input['category']][input['path']] < input['quantity']:
+                return False
         return True
 
 

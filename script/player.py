@@ -72,6 +72,7 @@ class Player(pg.sprite.Sprite):
 
         self.items = self.__build_item_image_dict(C.ASSETS_PATH + "items")
         self.ingredients = self.__build_ingredients_json(C.ASSETS_PATH + "ingredient", C.INGREDIENT_JSON_PATH)
+        self.main_ingredient = None
         self.artifacts = json.loads(open(C.ARTIFACT_JSON_PATH).read())
 
         self.particles = []
