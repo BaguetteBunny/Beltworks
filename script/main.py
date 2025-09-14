@@ -31,7 +31,7 @@ def build_item_image_dict(root_folder: str) -> dict:
                 if slot.is_dir():
                     images = [
                         str(file) for file in slot.iterdir()
-                        if file.is_file() and file.suffix.lower() in {".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"}
+                        if file.is_file() and file.suffix.lower() == ".png"
                     ]
                     slots[slot.name] = images
 
