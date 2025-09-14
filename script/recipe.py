@@ -31,9 +31,33 @@ REFINED_GEMSTONE_RECIPE = {
     "refined_silver_gemstone":    [("silver_gemstone", "gemstone", 10_000), (), (), (), ()],
 }
 
+RUBY_RECIPE = {
+    "ruby_powder":    [("amber_powder", "powder", 10), ("bronze_powder", "powder", 10), (), (), ()],
+    "ruby_key":       [("ruby_powder", "ruby", 50), ("amber_gemstone", "gemstone", 10), ("bronze_gemstone", "gemstone", 10), (), ()]
+}
+
+AQUAMARINE_RECIPE = {
+    "aquamarine_powder":    [("silver_powder", "powder", 10), ("sapphire_powder", "powder", 10), (), (), ()],
+    "aquamarine_key":       [("aquamarine_powder", "aquamarine", 50), ("silver_gemstone", "gemstone", 10), ("sapphire_gemstone", "gemstone", 10), (), ()]
+}
+
+AVENTURINE_RECIPE = {
+    "aventurine_powder":    [("emerald_powder", "powder", 10), ("gold_powder", "powder", 10), (), (), ()],
+    "aventurine_key":       [("aventurine_powder", "aventurine", 50), ("emerald_gemstone", "gemstone", 10), ("gold_gemstone", "gemstone", 10), (), ()]
+}
+
+JASPER_RECIPE = {
+    "jasper_powder":    [("amethyst_powder", "powder", 10), ("onyx_powder", "powder", 10), (), (), ()],
+    "jasper_key":       [("jasper_powder", "jasper", 50), ("amethyst_gemstone", "gemstone", 10), ("onyx_gemstone", "gemstone", 10), (), ()]
+}
+
 INGREDIENT_RECIPE_FETCHER = {
     "powder": POWDER_RECIPE,
     "gemstone": GEMSTONE_RECIPE,
     "refined_gemstone": REFINED_GEMSTONE_RECIPE,
+    "ruby": RUBY_RECIPE,
+    "aquamarine": AQUAMARINE_RECIPE,
+    "aventurine": AVENTURINE_RECIPE,
+    "jasper": JASPER_RECIPE
 }
 
