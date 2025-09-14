@@ -334,7 +334,7 @@ class IngredientItem(pg.sprite.Sprite):
         # Text
         self.text = {
             'name': Text(text = f"{self.name}", font = C.FONTS["XS"], color = (255,255,255), pos = (self.x, self.y), is_centered = True, is_bold = True),
-            'amount' : Text(text = f"{self.amount}", is_number_formatting = True)
+            'amount': Text(text = f"{self.amount}", is_number_formatting = True)
         }
         self.text['labeled_amount'] = Text(text = f"Quantity: {self.text['amount'].text}", font = C.FONTS["S"], color = (255,255,255), pos = (self.x, self.y), is_centered = True)
     
@@ -434,21 +434,25 @@ class CraftableComponent():
             if not input:
                 continue
 
-            input_dictionary = {"id": input[0], "quantity": input[2]}
+            input_dictionary = {"id": input[0], "quantity": Text(text = f"{input[2]}", is_number_formatting = True)}
             input_dictionary["path"] = f"assets/{self.output_type}/{input[1]}/{input_dictionary['id']}.png"
             input_dictionary["image"] = pg.image.load(input_dictionary["path"]).convert_alpha()
+            input_dictionary["labeled_quantity"] = Text(text = f"x {input_dictionary['quantity'].text}", font = C.FONTS["S"], color = (255,255,255), pos = (0, 0), is_centered = True)
 
             self.inputs.append(input_dictionary)
 
     def display(self, screen: pg.Surface):
         y = 88 * C.SCALE_Y
+        label_y = 132 * C.SCALE_Y
 
         craft_slot_x = 416 * C.SCALE_X
         gap_between_slot = 196*C.SCALE_X
         for input in self.inputs:
-            input_image: pg.Surface = pg.transform.smoothscale_by(input['image'], C.SCALE_X*0.75)
+            input_image = pg.transform.smoothscale_by(input['image'], C.SCALE_X*0.75)
             input_rect = input_image.get_rect(center=(craft_slot_x, y))
             screen.blit(input_image, input_rect)
+
+            input['labeled_quantity'].draw(screen, new_pos = (craft_slot_x, label_y))
             
             craft_slot_x += gap_between_slot
 
