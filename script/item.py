@@ -351,6 +351,9 @@ class IngredientItem(pg.sprite.Sprite):
         screen.blit(new_image, self.rect)
 
     def update_and_draw_gui(self, screen: pg.Surface, player: Player, gui: pg.Surface):
+        if self.display_recipe and self.recipe:
+            self.recipe.display(screen = screen)
+
         if self.rect.colliderect(player.rect):
             centerx = self.rect.centerx - gui.get_width() // 2
             centery = self.rect.centery - gui.get_height() - 20*C.SCALE_Y
@@ -365,9 +368,6 @@ class IngredientItem(pg.sprite.Sprite):
             self.display_recipe = False
             if self.rect.colliderect(player.rect):
                 self.display_recipe = not self.display_recipe
-
-        if self.display_recipe and self.recipe:
-            self.recipe.display(screen = screen)
 
     def __repr__(self) -> str:
         return f"Item: {self.name}, Quantity: {self.amount}, Category: {self.category.title()}"
