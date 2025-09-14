@@ -275,12 +275,13 @@ class Item(pg.sprite.Sprite):
         hard_max = T ** 3       # 8     27      64      125     216
         quantity = int(bias * (hard_max - hard_min)) + 1
 
+        # Generate random tier
+        id_tier = T
+        for _ in range(5): id_tier -= random.random()
+        id_tier = int(id_tier)
+
         # Generate random ingredient
         if self.category in {"bronze", "silver", "gold", "amber", "emerald", "sapphire", "onyx", "amethyst"}:
-            id_tier = T
-            for _ in range(5): id_tier -= random.random()
-            id_tier = int(id_tier)
-
             if id_tier <= 0:
                 image_name = "raw_" + self.category + "_ore"
                 category = "raw_ore"
@@ -294,7 +295,7 @@ class Item(pg.sprite.Sprite):
                 image_name = "refined_" + self.category + "_gemstone"
                 category = "gemstone"
             else:
-                raise ValueError("How the fuck did this even happen? @ serialize_ingredient")
+                raise ValueError("How the fuck did this even happen? @ gemstone -> serialize_ingredient")
         
         player.item_lookup(image_name, category, json_path, ItemAction.INGREDIENT_INCREMENT, quantity)
 
@@ -405,4 +406,4 @@ class ArtifactItem(pg.sprite.Sprite):
         return f"Item: {self.name}, Owned: {self.owned}, Category: {self.category}"
 
 class CraftableComponent():
-    def __init__(self, type: IngredientItem | ArtifactItem, ): ...
+    def __init__(self, image_name_input: list[str, str, str, str, str], item_output: IngredientItem | ArtifactItem, ): ...
