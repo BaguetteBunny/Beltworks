@@ -63,7 +63,7 @@ def build_ingredients_json(root_folder: str, json_path: str) -> dict:
         existing = {}
 
     final_data = result if not existing else existing
-    order = ["raw_ore", "powder", "gemstone", "ruby", "aventurine", "aquamarine", "jasper"]
+    order = C.INGREDIENT_DISPLAY_ORDER
     ordered_data = {key: final_data[key] for key in order if key in final_data}
 
     for key in final_data:

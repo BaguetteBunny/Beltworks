@@ -27,6 +27,8 @@ ARTIFACT_JSON_PATH = DB_PATH + "artifact_items.json"
 INGREDIENT_JSON_PATH = DB_PATH + "ingredient_items.json"
 PLAYER_JSON_PATH = DB_PATH + "stats.json"
 
+INGREDIENT_DISPLAY_ORDER = ["raw_ore", "powder", "gemstone", "refined_gemstone", "ruby", "aventurine", "aquamarine", "jasper"]
+
 GUI = {
     'item_menu': pg.transform.smoothscale_by(pg.image.load(MENU_PATH + "Item_Menu.png").convert_alpha(), SCALE_X*1.5),
 }
